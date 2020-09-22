@@ -1,0 +1,145 @@
+\documentclass{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage[french]{babel}
+\usepackage[top=2cm, bottom = 2cm, right = 2.3cm, left = 2.3 cm]{geometry}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{stmaryrd}
+
+\begin{document}
+
+%\maketitle
+\begin{titlepage}
+    ~ \vfill
+    \begin{center}
+      \LARGE  Université de Bordeaux - Master 2\\[1.5cm]
+  
+      {\Large \bfseries \bsc{--- Algorithmique appliquée ---}}\\[0.5cm]
+  
+      \rule{\linewidth}{0.5mm}\\[0.4cm] {\Huge \bfseries Projet stratégies de défense à la RoboCup \\[0.2cm]} \rule{\linewidth}{0.5mm}\\[1.5cm] {
+      \Large Adrien \bsc{Maurin}, Florian \bsc{Simba}}\\[0.5cm]
+  
+                {\large Encadré par Ludovic \bsc{Hofer}}\\ \vfill
+                \includegraphics[width = 300px]{logo.jpg} \vfill
+                                {\large 15 septembre 2020}
+    \end{center}
+\end{titlepage}
+
+\section{Définition formelle du problème}
+
+%parler collision, pas de discrétisation angulair ou de position de défenseurs.
+
+\subsection{Input}
+
+\paragraph{Limites du terrain} Le terrain de jeu est un rectangle délimité par deux points $(x_{min}, y_{min})$ et $(x_{max}, y_{max})$. Il s'agit donc de l'ensemble de points $F$ tels que :
+
+\begin{equation*}
+F = \{ (x, y) \in \mathbb{R}^2 \ /\  x \leqslant x_{max} \wedge x \geqslant x_{min} \wedge y \leqslant y_{max} \wedge y \geqslant y_{min} \}.
+\end{equation*}
+
+\paragraph{Le terrain} Le terrain est modélisé par l'ensemble de points $G$ tel que :
+
+\begin{equation*}
+G = \{ (x, y) \in F \ /\  fmod(x, posstep) = 0 \wedge fmod(y, posstep) = 0 \text{ avec } posstep \in \mathbb{R} \}.
+\end{equation*}
+
+Autrement dit, il s'agit de la grille de points contenant l'origine du plan et dont la taille des cases est de $posstep$.
+
+\paragraph{Les positions des adversaires} Il s'agit d'une liste de points $p_i$, avec $p_i \in G$. Cette liste $A_i$ est définie par :
+
+\begin{equation}
+    A = \{ \forall i, j \in \llbracket 1, |A| \rrbracket, i \ne j, \neg collision(a_i, a_j) \}.
+\end{equation}
+
+\paragraph{Les tirs} Il s'agit d'un ensemble $T$ de demi-droites ayant pour point d'origine celui d'un attaquant $i$ tel que :
+
+\begin{equation*}
+    T_i = \{ p \in \mathbb{R}^2 \ / \ fmod(angle(p), thetastep) = 0 \}.
+\end{equation*}
+
+La fonction $angle$ retourne l'angle formé par la droite passant par un point donné et l'axe des abscisses.
+
+\paragraph{Le(s) goal(s)} Il s'agit d'un segment délimité par deux points. Un dernier paramètre permet d'indiquer le sens du goal, i.e. par quel \og côté \fg{} du segment la droite de tir doit passer. On notera ce vecteur $g$. Le segment délimitant le goal sera noté $T$
+
+\paragraph{Les buts} Pour qu'un but $B$ soit marqué, il faut qu'une droite de tir d'un attaquant traverse le segment du goal dans le bon sens sans rencontrer de robots sur le trajet.
+
+\begin{equation}
+    B = \{ \forall i \in \llbracket 1, |A| \rrbracket, T_i \cap (A \textbackslash \{a_i\} \cup D) = \emptyset \wedge T_i \cap T \ne \emptyset \wedge sens(T_i, a_i) \}
+\end{equation}
+
+\begin{align*}
+  sens \colon & F^2, F^2\to \{0, 1 \}\\
+  &T_i, a_i \mapsto sens(T_i, a_i) = \begin{cases}
+                                   1 & \parbox[t]{.7\textwidth}{si $\exists t \in T_i\ / \ \exists (x, y) \in t \textbackslash \{A_i \} \ / \ (signe(x-a_{ix}) \ne signe(g_x) \wedge g_x \ne 0) \ \vee (signe(y-a_{iy}) \ne signe(g_y) \wedge g_y \ne 0)$ avec $g$ le vecteur direction du goal} \\
+                                   0 & \text{sinon.}
+  \end{cases}
+\end{align*}
+
+
+
+
+\begin{equation*}
+    R = \{ p \in \mathbb{R}^2 \ /\  ||p_0 - p||^2 \leqslant radius \}.
+\end{equation*}
+
+\paragraph{positon step}
+
+\paragraph{theta step}
+
+\subsection{Output}
+
+\paragraph{Les positions des défenseurs} Il s'agit d'une liste de points $p_i$ dans $D$ tels que :
+
+\begin{equation*}
+D = \{ \forall i, j \in \llbracket 1, |D| \rrbracket, i \ne j, \neg collision(d_i, d_j) \}.
+\end{equation*}
+
+Le cardinal de l'ensemble $D$ est par ailleurs borné par le nombre de joueurs. On a ainsi $|D| \leqslant 8$.
+
+La fonction $collision$ peut être exprimée de la manière suivante :
+
+\begin{align*}
+  collision \colon &F^2 \to \{0, 1 \}\\
+  &d_i, d_j \mapsto collision(d_i, d_j) = \begin{cases}
+                                   0 & \text{si $|| d_i - d_j ||_2 < 2R$ avec $R$ la taille du robot} \\
+                                   1 & \text{sinon.}
+  \end{cases}
+\end{align*}
+
+
+
+\paragraph{Le nombre de défenseurs}
+
+
+\section{Modélisation du problème}
+
+% parler du langage de prog ???
+% a voir ce qu'il faut mettre dedans
+
+\section{Pistes de résolution du problème}
+
+\subsection{Méthode naïve : barrière de défenseurs}
+
+\subsection{Les défenseurs se placent devant les attaquants}
+L'idée de cette stratégie consiste à positionner chaque défenseur devant un attaquant de manière à bloquer son champ de tir. Cette technique nécessite autant de défenseurs qu'il y a d'attaquants. 
+
+%TODO figure tikz explicative, ainsi que présentation des calculs
+
+\section{Compatibilité de la modélisation choisie avec les extensions}
+
+% expliquer les limites et avantages de chaque méthodes justifiant un choix.
+
+\subsection{Méthode naïve : barrière de défenseurs}
+%- pas très utile en jeu...
+
+\subsection{Les défenseurs se placent devant les attaquants}
+%- autant de défenseurs que d'attaquant
+% - les défenseurs doivent etre proche des attaquants
+% - compliqué en cas de plusierus goals
+
+
+
+\end{document}
