@@ -151,26 +151,52 @@ Le cardinal de l'ensemble $D$ est par ailleurs borné par le nombre de joueurs. 
 % modéliser sous forme de graphe
 % algorithme A* => solution ?
 
+On va modéliser le problème qu'on vient de définir de manière formelle comme un problème de graphe.
+
+\paragraph{Les n\oe uds du graphe}
+Les n\oe uds du graphe sont les points de placement dans le terrain (correspondant à l'ensemble $G$). On note cet ensemble $V$.
+
+
+\paragraph{Les n\oe uds du goal}
+Les n\oe uds du goal sont l'ensemble des points de $E_a$ tel que :
+
+\begin{equation*}
+  V_a = \{ x \ / \ \exists y \in T \wedge x \in G \wedge ||xy||_2 < posstep \}
+\end{equation*}
+
+\paragraph{Les n\oe uds des attaquants}
+Les n\oe uds des attaquants sont l'ensemble des points de $A$. On note cet ensemble $V_d$.
+
+\paragraph{Les arêtes}
+On définit une arête entre deux n\oe uds de la manière suivante :
+
+\begin{equation*}
+  E = \{ xy \ / \ x \in F, y _in F, ||xy||_2 = posstep \}
+\end{equation*}
+
+On obtient ainsi une grille.
+
 \section{Pistes de résolution du problème}
 
-\subsection{Méthode naïve : barrière de défenseurs}
+Une fois que l'on a modélisé le problème sous forme de graphe, on peut proposer plusieurs pistes de résolution. Une première piste consiste à appliquer l'algorithme $A*$.
 
-\subsection{Les défenseurs se placent devant les attaquants}
-L'idée de cette stratégie consiste à positionner chaque défenseur devant un attaquant de manière à bloquer son champ de tir. Cette technique nécessite autant de défenseurs qu'il y a d'attaquants.
+\subsection{Algorithme A*}
+Pour rappel, l'algorithme A* consiste, étant donné un graphe, un sommet d'arrivée et un sommet de départ à trouver un chemin (généralement le plus cours) permettant d'aller du sommet de départ au sommet d'arrivée en passant par le graphe donné.
 
-%TODO figure tikz explicative, ainsi que présentation des calculs
+\paragraph{Le sommet de départ}
+Dans cette définition du problème, le sommet de départ correspond à un attaquant (appartenant à l'ensemble $E_d$).
+
+\paragraph{Le sommet d'arrivée}
+Concernant le sommet d'arrivée, il s'agit plutôt d'un ensemble de sommets. Pour que le chemin soit valide, il suffit d'atteindre l'un de ces sommets. L'ensemble des sommets d'arrivée correspondent à l'ensemble des sommets du goal (l'ensemble $E_a$).
+
+\paragraph{Calcul d'un chemin}
+L'objectif de l'algorithme est de calculer un chemin permettant d'aller d'un attaquant à un but. On ajoutera que cette distance doit être bornée par une constante $C$ que l'on définira. Si un tel chemin existe, cela signifie qu'il est possible pour un attaquant de marquer. En calculant l'ensemble des chemins permettant d'aller d'un attaquant au goal et qui ont une longueur plus petite que $C$, on a l'ensemble des tirs de l'atraquant.
+
+L'objectif sera ensuite de déterminer l'ensemble des n\oe uds communs à tous les chemins. Il s'agira du placement potentiel des défenseurs pour bloquer tous les tirs.
 
 \section{Compatibilité de la modélisation choisie avec les extensions}
 
-% expliquer les limites et avantages de chaque méthodes justifiant un choix.
 
-\subsection{Méthode naïve : barrière de défenseurs}
-%- pas très utile en jeu...
-
-\subsection{Les défenseurs se placent devant les attaquants}
-%- autant de défenseurs que d'attaquant
-% - les défenseurs doivent etre proche des attaquants
-% - compliqué en cas de plusierus goals
 
 \section{Limites}
 
