@@ -4,10 +4,18 @@
 \usepackage[T1]{fontenc}
 \usepackage{graphicx}
 \usepackage[french]{babel}
-\usepackage[top=2cm, bottom = 2cm, right = 2.3cm, left = 2.3 cm]{geometry}
+\usepackage[top=3cm, bottom = 3cm, right = 3cm, left = 3cm]{geometry}
 \usepackage{amssymb}
 \usepackage{amsmath}
 \usepackage{stmaryrd}
+\usepackage{hyperref}
+
+\usepackage{tikz}
+\usetikzlibrary{positioning,chains,fit,shapes,calc}
+
+\definecolor{myred}{RGB}{160,80,80}
+\definecolor{mygreen}{RGB}{80,160,80}
+\definecolor{myblue}{RGB}{80,80,160}
 
 \begin{document}
 
@@ -24,24 +32,21 @@
 
                 {\large Encadré par Ludovic \bsc{Hofer}}\\ \vfill
                 \includegraphics[width = 300px]{logo.jpg} \vfill
-                                {\large 15 septembre 2020}
+                                {\large 2 octobre 2020}
     \end{center}
 \end{titlepage}
 
 \section{Définition formelle du problème}
 
-%parler collision, pas de discrétisation angulair ou de position de défenseurs.
-%% la direction ne semble pas fonctionner, peut êtrre uniquement orthogonal ?
-% goal à verifier l'utilité de la position ???
-% nb pages
+Dans cette section, nous allons introduire les différentes variables du problème et définir formellement les objets utilisés en entrée et en sortie.
 
 \subsection{Input}
 
-\paragraph{La constante $posstep$} Il s'agit de la valeur qui indique l'écart minimal entre deux points de $\mathbb{R}^2$. Cela permet de discrétiser $\mathbb{R}^2$.
+\paragraph{La constante $posstep$} Il s'agit de la valeur qui indique l'écart minimal entre deux points de $\mathbb{R}^2$. Cela permet de discrétiser $\mathbb{R}^2$. On a alors $posstep \in \mathbb{R}^*_+$.
 
-\paragraph{La constante $thetastep$} Il s'agit de la valeur minimale de l'angle que doivent former deux droites pour ne pas être confondus. Cela permet de discrétiser les angles.
+\paragraph{La constante $thetastep$} Il s'agit de la valeur minimale de l'angle que doivent former deux droites pour ne pas être confondus. Cela permet de discrétiser les angles (compris dans $]-\pi ; \pi]$).
 
-\paragraph{La constante $radius$} Il s'agit du rayon des cercles qui modélisent les robots.
+\paragraph{La constante $radius$} Il s'agit du rayon des cercles qui modélisent les robots. On a alors $radius \in \mathbb{R}^*_+$.
 
 \paragraph{Limites du terrain} Le terrain de jeu est un rectangle délimité par deux points $(x_{min}, y_{min})$ et $(x_{max}, y_{max})$. Il s'agit donc de l'ensemble de points $F$ tels que :
 
@@ -52,7 +57,7 @@ F = \{ (x, y) \in \mathbb{R}^2 \ /\  x \leqslant x_{max} \wedge x \geqslant x_{m
 \paragraph{Le terrain} Le terrain est modélisé par l'ensemble de points $G$ tel que :
 
 \begin{equation*}
-G = \{ (x, y) \in F \ /\  fmod(x, posstep) = 0 \wedge fmod(y, posstep) = 0 \text{ avec } posstep \in \mathbb{R}^*_+ \}.
+G = \{ (x, y) \in F \ /\  fmod(x, posstep) = 0 \wedge fmod(y, posstep) = 0 \}.
 \end{equation*}
 
 Autrement dit, il s'agit de la grille de points contenant l'origine du plan et dont la taille des cases est de $posstep$.
@@ -94,16 +99,8 @@ La fonction $angle$ retourne l'angle formé par la demi-droite donnée et l'axe 
 Pour qu'un tir soit cadré, il faut que le tir d'un attaquant traverse le segment du goal dans le bon sens. Cette représentation montre les tirs qui atteignent le but sans prendre en compte les défenseurs. L'ensemble $B_c$ des tirs cadré est exprimé ainsi :
 
 \begin{equation*}
-    B_c = \{ t_{ij} \ / \ \forall i \in \llbracket 1, |A| \rrbracket, \forall j \in \llbracket 1, |T_i| \rrbracket, t_{ij} \cap T \ne \emptyset \wedge sens(t_{ij}, a_i) \}
+    B_c = \{ t_{ij} \ / \ \forall i \in \llbracket 1, |A| \rrbracket, \forall j \in \llbracket 1, |T_i| \rrbracket, t_{ij} \cap T \ne \emptyset \wedge (t_{ij}|g) < 0  \}
 \end{equation*}
-
-\begin{align*}
-  sens \colon & F^2, F^2\to \{0, 1 \}\\
-  &T_i, a_i \mapsto sens(T_i, a_i) = \begin{cases}
-                                   1 & \parbox[t]{.7\textwidth}{si $\exists t \in T_i\ / \ \exists (x, y) \in t \textbackslash \{A_i \} \ / \ (signe(x-a_{ix}) \ne signe(g_x) \wedge g_x \ne 0) \ \vee (signe(y-a_{iy}) \ne signe(g_y) \wedge g_y \ne 0)$ avec $g$ le vecteur direction du goal} \\
-                                   0 & \text{sinon.}
-  \end{cases}
-\end{align*}
 
 
 \paragraph{Les tirs non-cadrés}
@@ -145,112 +142,147 @@ Le cardinal de l'ensemble $D$ est par ailleurs borné par le nombre de joueurs. 
 
 \section{Modélisation du problème}
 
-% parler du langage de prog ???
-% a voir ce qu'il faut mettre dedans
-%demander au prof !!!!!
-% modéliser sous forme de graphe
-% algorithme A* => solution ?
+On va modéliser le problème que l'on vient de définir de manière formelle comme un problème de graphe.
 
-On va modéliser le problème qu'on vient de définir de manière formelle comme un problème de graphe.
+\subsection{Construction du graphe}
 
 \paragraph{Les n\oe uds représentant les tirs}
-Un tir est un sommet du graphe combinant la position d'un attaquant et un angle $(Att, \theta)$. On ne considère que les tirs cadré. On note l'ensemble de ces sommets $V_t$.
+Un tir est est une combinaison entre la position d'un attaquant et un angle $(Att, \theta)$. On ne considère que les tirs cadré. Pour chaque tir cadré, on lui associe un n\oe ud sur notre graphe. On note l'ensemble de ces sommets $V_t$.
 
 \paragraph{Les n\oe uds représentant les position des défenseurs}
-La position d'un défenseur est un sommet modélisé par un point du terrain. On ne considère que les positions disponibles. On note l'ensemble de ces sommets $V_d$.
+La position d'un défenseur est modélisée par un point du terrain. On ne considère que les positions disponibles, i.e. l'ensemble des points de $G\textbackslash A$. Pour chaque position de défenseur, on lui associe un n\oe ud sur notre graphe. On note l'ensemble de ces sommets $V_d$.
+
+L'ensemble des sommets du graphe est alors égale à $V = V_t \cup V_d$.
 
 \paragraph{Les interceptions}
-Une interception est modélisée comme une arête reliant le tir d'un attaquant à une position de défenseur. On note cet ensemble $E$.
+Une interception entre un tir et défenseur est modélisée comme une arête reliant le tir d'un attaquant à une position de défenseur. On note cet ensemble $E$.
 
-\paragraph{Simplification du graphe}
-On simplifie le graphe en retirant les sommets reliés à aucune arrête (correspondant à des positions de défenseurs n'interceptant aucun tir).
+\subsection{Simplification du graphe}
+On simplifie le graphe qu'on vient d'obtenir en retirant les sommets isolés (correspondant à des positions de défenseurs n'interceptant aucun tir).
 
-\paragraph{Ensemble dominants}
-Résoudre le problème initial, i.e. trouver le nombre minimal de défenseurs permettant de défendre le but se ramène dans notre modélisation à résoudre le problème de graphe suivant : il faut trouver le plus petit sous ensemble de $V_t$ tel que cet ensemble domine $V_d$.
+\subsection{Résolution du problème}
+Résoudre le problème initial, i.e. trouver le nombre minimal de défenseurs permettant de défendre le but se ramène dans notre modélisation à résoudre le problème de graphe suivant :
 
-%todo figure tikz pour modéliser le pb
+\paragraph{Problème} Il faut trouver le plus petit sous ensemble de $V_t$ tel que cet ensemble domine $V_d$.
+
+\subsection{Example d'application}
+
+La figure \ref{tikz:example} montre un exemple de la modélisation du problème. Ici, il existe 5 trajectoires de tirs permettant aux adversaires de marquer. On dispose de 5 emplacements pour placer nos défenseurs.  On constate que placer un défenseur à la position $Def_1$ et un défenseur à la position $Def_4$ permet de bloquer la totalité des tirs (les arêtes en bleu). L'ensemble des tirs est alors dominé par notre groupe de défenseurs. On remarque dans cet example qu'on ne peut pas faire mieux que 2 défenseurs.
 
 
+\begin{figure}[h!]
+\centering
+\label{tikz:example}
+\begin{tikzpicture}[thick,
+  every node/.style={draw,circle},
+  fsnode/.style={fill=myred},
+  ssnode/.style={fill=mygreen},
+  every fit/.style={ellipse,draw,inner sep=-2pt,text width=2cm},
+  -,shorten >= 3pt,shorten <= 3pt
+]
 
-%%\paragraph{Les n\oe uds du graphe}
-%%Les n\oe uds du graphe sont les points de placement dans le terrain %%(correspondant à l'ensemble $G$). On note cet ensemble $V$.
-%%
-%%
-%%\paragraph{Les n\oe uds du goal}
-%%Les n\oe uds du goal sont l'ensemble des points de $E_a$ tel que :
-%%
-%%\begin{equation*}
-%%  V_a = \{ x \ / \ \exists y \in T \wedge x \in G \wedge ||xy||_2 < posstep \}
-%%\end{equation*}
-%%
-%%\paragraph{Les n\oe uds des attaquants}
-%%Les n\oe uds des attaquants sont l'ensemble des points de $A$. On note cet %%ensemble $V_d$.
-%%
-%%\paragraph{Les arêtes}
-%%On définit une arête entre deux n\oe uds de la manière suivante :
-%%
-%%\begin{equation*}
-%%  E = \{ xy \ / \ x \in F, y \in F, ||xy||_2 = posstep \}
-%%\end{equation*}
-%%
-%%On obtient ainsi une grille.
+% the vertices of U
+\begin{scope}[start chain=going below,node distance=7mm]
+\foreach \i in {1,2,...,5}
+  \node[fsnode,on chain] (f\i) [label=left: $Tir_\i$] {};
+\end{scope}
+
+% the vertices of V
+\begin{scope}[xshift=6cm,start chain=going below,node distance=7mm]
+\foreach \i in {1,2,...,5}
+  \node[ssnode,on chain] (s\i) [label=right: $Def_\i$] {};
+\end{scope}
+
+% the set U
+\node [myred,minimum size = 4cm, fit=(f1) (f5),label=above:Tirs cadrés] {};
+% the set V
+\node [mygreen, minimum size = 4cm, fit=(s1) (s5),label={[align=center]above:Positions des\\ défenseurs}] {};
+
+% the edges
+\draw[myblue, line width = 0.5mm] (f1) -- (s1);
+\draw[myblue, line width = 0.5mm] (s1) -- (f2);
+\draw (f2) -- (s2);
+\draw (s3) -- (f3);
+\draw[myblue, line width = 0.5mm] (f3) -- (s4);
+\draw[myblue, line width = 0.5mm] (s4) -- (f4);
+\draw[myblue, line width = 0.5mm] (f5) -- (s1);
+\draw (s5) -- (f4);
+\draw (f2) -- (s3);
+\end{tikzpicture}
+\caption{Exemple du problème où les 5 tirs sont bloqués par deux défenseurs 1 et 4.}
+\end{figure}
+
 
 \section{Pistes de résolution du problème}
-L'idée serait de modéliser un graphe de défenseurs et d'attaquant en partant de la modélisation du problème.
 
-Pour cela, il faut commencer par la collecte de les tirs possibles (cadrés) provenant des adversaires. Sachant, que les adversaires et le goal sont des noeuds. 
-Ensuite, il faudra placer des défenseurs (noeuds) sur l'ensemble de la grille puis testé afin de retirer ceux qui n'interceptent aucun tir cadré.
 
-Enfin, les directions de ces tirs, correspondront aux arêtes reliant les adversaires et les défenseurs ou les adversaires et le goal.
 
-%Une fois que l'on a modélisé le problème sous forme de graphe, on peut proposer plusieurs pistes de résolution. Une première piste consiste à appliquer l'algorithme $A*$.
+\subsection{Interception de tir}
+Un tir étant défini à l'aide d'un angle $\theta$ et d'un point $(x_0, y_0)$. Pour déterminer si ce dernier est intercepté par un point, on peut dans un premier retrouver l'équation de la droite :
 
-%\subsection{Algorithme A*}
-%Pour rappel, l'algorithme A* consiste, étant donné un graphe, un sommet d'arrivée et un sommet de départ à trouver un chemin (généralement le plus cours) permettant d'aller du sommet de départ au sommet d'arrivée en passant par le graphe donné.
+\begin{align*}
+y & =  y_0 + (x - x_0)\tan \theta & \text{ avec $x \geqslant x_0$ si } \theta \in ]-\frac{\pi}{2}; \frac{\pi}{2} [ \\
+y & = y_0 + (x - x_0)\tan \theta & \text{ avec $x \leqslant x_0$ si } \theta \in ]-\pi; \frac{\pi}{2}[ \cup ]\frac{\pi}{2}; \pi ] \\
+x & = x_0  & \text{ avec $y \geqslant 0$ si } \theta = \frac{\pi}{2} \\
+x & = x_0  & \text{ avec $y \leqslant 0$ si } \theta = -\frac{\pi}{2} \\
+\end{align*}
 
-%\paragraph{Le sommet de départ}
-%Dans cette définition du problème, le sommet de départ correspond à un attaquant (appartenant à l'ensemble $E_d$).
+Une fois qu'on a l'équation de la demi-droite modélisant le tir, pour vérifier s'il y a une interception d'un tir à une position d'un défenseur on calcule la distance minimale entre la demi-droite de tir et le point position du défenseur. Si cette distance est inférieure à $R$ (rayon du robot), alors le tir est intercepté.
 
-%\paragraph{Le sommet d'arrivée}
-%Concernant le sommet d'arrivée, il s'agit plutôt d'un ensemble de sommets. Pour que le chemin soit valide, il suffit d'atteindre l'un de ces sommets. L'ensemble des sommets d'arrivée correspondent à l'ensemble des sommets du goal (l'ensemble $E_a$).
+\subsection{Utilisation d'un algorithme exhaustif}
+Pour résoudre le problème d'ensemble dominant dans notre graphe, on peut dans un premier temps utiliser un algortihme exhaustif, qui, pour toute configuration d'ensemble de sommets dans $V_d$, vérifie s'il est dominant, et le conserve si c'est le cas. Ensuite, l'algorithme renvoie un ensemble dominant de taille minimale. L'avantage est qu'on aura la meilleure solution possible. Cependant, cet algorithme est couteux avec une complexité en $\mathcal{O}(2^{|V_d|})$\footnote{On code chaque sommet des défenseurs par 0 s'il ne fait pas parti de l'ensemble dominant et 1 sinon. Tester ensuite toutes les combinaisons donne cette complexité exponentielle.}.
 
-%\paragraph{Calcul d'un chemin}
-%L'objectif de l'algorithme est de calculer un chemin permettant d'aller d'un attaquant à un but. On ajoutera que cette distance doit être bornée par une constante $C$ que l'on définira. Si un tel chemin existe, cela signifie qu'il est possible pour un attaquant de marquer. En calculant l'ensemble des chemins permettant d'aller d'un attaquant au goal et qui ont une longueur plus petite que $C$, on a l'ensemble des tirs de l'atraquant.
+\subsection{Utilisation d'un algorithme Branch and Reduce}
 
-%L'objectif sera ensuite de déterminer l'ensemble des n\oe uds communs à tous les chemins. Il s'agira du placement potentiel des défenseurs pour bloquer tous les tirs.
+Une piste de résolution possible est l'utilisation de l'algorithme Branch and Reduce, défini dans l'article \og{} A Branch-and-Reduce Algorithm for Finding a Minimum Independent Dominating Set in Graphs \fg{}\footnote{\url{https://www.univ-orleans.fr/lifo/Members/Mathieu.Liedloff/publications/GL06.pdf}} par Serge \bsc{Gaspers} et Mathieu \bsc{Liedloff}.
+
+Dans cet article, l'algorithme travaille sur des graphes marqués, i.e. des graphes définis par le triplet : $G = (M, F, E)$ ou $M$ est un ensemble de sommets marqués (les tirs), $F$ est un ensemble de sommets libres (les positions des défenseurs) et $E$ l'ensemble des arêtes. L'algorithme calcule le sous-ensemble minimal (s'il existe) de $F$ qui domine le graphe $G' = (M \cup F, E)$. La complexité de cet algorithme est égàle à $\mathcal{O}(1.3575^{|V_d|})$.
+
+%L'idée serait de modéliser un graphe de défenseurs et d'attaquant en partant de la modélisation du problème.
+
+%Pour cela, il faut commencer par la collecte de les tirs possibles (cadrés) provenant des adversaires. Sachant, que les adversaires et le goal sont des noeuds.
+%Ensuite, il faudra placer des défenseurs (noeuds) sur l'ensemble de la grille puis testé afin de retirer ceux qui n'interceptent aucun tir cadré.
+
+%Enfin, les directions de ces tirs, correspondront aux arêtes reliant les adversaires et les défenseurs ou les adversaires et le goal.
+
+
 
 \section{Compatibilité de la modélisation choisie avec les extensions}
+
+Cette section les avantages et inconvénients de notre modélisation par rapport aux extensions à déveloper.
+
 \paragraph{Plusieurs buts}
-S'il y a plus buts, le nombre de trajectoires ne fera que s'accroître.
+S'il y a plusieurs buts, le nombre de trajectoires ne fera que s'accroître. Si $V_{ti}$ correspond aux tirs cadrés dans le goal $i$ et qu'il y a $n$ buts, alors $V_t = V_{t1} \cap \cdots \cap V_{tn}$.
 
 
 \paragraph{Position initiale des joueurs}
+Dans le cas ou la position initiale des défenseurs est connue, on peut introduire un paramètre $movestep$ qui symbolise la distance maximale qu'un défenseur peut parcourir pour intercépter le tir. Les changements dans notre modèle sont les suivants :
 
+\begin{itemize}
+  \item Les positions des défenseurs ne sont plus tous les points de $G \textbackslash A$ mais tous les points du terrains à portée de déplacement des défenseurs.
+  \item Chaque défenseur doit pouvoir être placé dans sa zone d'action.
+\end{itemize}
 
 \paragraph{Distance minimale entre les robots}
-Cette extension ne va pas changer grand sur la résolution du problème, car on va considérer par exemple que cette distance minimale correspond au diamètre du robot.
+%Cette extension ne va pas changer grand sur la résolution du problème, car on va considérer par exemple que cette distance minimale correspond au diamètre du robot.
+Dans le cas ou les robots nécéssitent de respecter une distance minimale, nous pouvons introduire un paramètre $D$ modélisant la distance minimale de deux robots.
+
+Pour prendre en compte cette contrainte, il faut légèrement changer notre modélisation. \'A partir du sous graphe $G'$ comportant les sommets $V_d$, on place une arête entre deux sommets si les positions des défenseurs sont à une distance inférieure à $D$. La solution de positionnement des défenseurs doit être un stable de $G'$.
+
+
 
 \paragraph{Gardien}
+Pour pouvoir prendre en compte cette extension dans notre modèle, il faut prendre en compte les modifications suivantes :
+\begin{itemize}
+  \item L'ensemble des sommets de position des défenseurs situés dans le goal est égal à $V_g$. L'ensemble des sommets $V$ du graphe est alors égal à $V_t \cap V_g \cap V_d$.
+  \item On place des arêtes entre des sommets de $V_t$ et $V_d$ et entre des sommets de $V_t$ et $V_g$ s'il y a des interceptions de tir.
+\end{itemize}
 
+La solution de positionnement des défenseurs ne doit autoriser le placement que d'un unique défenseur dans le goal (un seul sommet dans $V_g$).
 
-\paragraph{Position initiale des joueurs}
+\paragraph{Trajectoires courbées}
+Pour pouvoir gérer des trajectoires courbées, il faut introduire un nouveau paramètre $alpha$ qui est la courbure maximale de la courbe. Lors du calcul des trajectoires des tirs cadrés, il ne faudra pas seulement prendre en compte les tirs rectilignes mais aussi les tirs courbées (discrétisés par $thetastep$).
+Cette extension ne nécessite pas vraiment de changements dans notre modélision à part à la définition des tirs. Un tir est maintenant modélisé par un point, un angle et une courbure $((x,y), \theta, \alpha)$. Cela aura tendance à angmenter le nombre de sommets modélisant des tirs seulement, mais la résolution de l'algorithme reste similaire.
 
-
-\paragraph{Position initiale des joueurs}
-
-
-
-\section{Limites}
-
-\subsection{Méthode naïve : barrière de défenseurs}
-Une barrière de défenseurs fonctionne bien avec un seul goal peut importe la position des adversaires
-mais commence à montrer ses limites avec deux ou plusieurs goals.
-En plus, cela poserait un vrai problème dans un vrai match, car il s'agirait d'un jeu purement defensif
-ce qui diminuerait les chances de marquer.
-
-\subsection{Les défenseurs se placent devant les attaquants}
-Cette stratégie est très efficace par rapport à la précedente et diminuent fortement le normbre de défenseurs et
-s'adapte bien au situation complexe comme la présence de plusieurs goals ou bien si l'équipe dispose de moins de
-défenseurs que d'adversaires.
 
 \end{document}
