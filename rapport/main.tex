@@ -196,6 +196,12 @@ Résoudre le problème initial, i.e. trouver le nombre minimal de défenseurs pe
 %%On obtient ainsi une grille.
 
 \section{Pistes de résolution du problème}
+L'idée serait de modéliser un graphe de défenseurs et d'attaquant en partant de la modélisation du problème.
+
+Pour cela, il faut commencer par la collecte de les tirs possibles (cadrés) provenant des adversaires. Sachant, que les adversaires et le goal sont des noeuds. 
+Ensuite, il faudra placer des défenseurs (noeuds) sur l'ensemble de la grille puis testé afin de retirer ceux qui n'interceptent aucun tir cadré.
+
+Enfin, les directions de ces tirs, correspondront aux arêtes reliant les adversaires et les défenseurs ou les adversaires et le goal.
 
 %Une fois que l'on a modélisé le problème sous forme de graphe, on peut proposer plusieurs pistes de résolution. Une première piste consiste à appliquer l'algorithme $A*$.
 
@@ -214,6 +220,23 @@ Résoudre le problème initial, i.e. trouver le nombre minimal de défenseurs pe
 %L'objectif sera ensuite de déterminer l'ensemble des n\oe uds communs à tous les chemins. Il s'agira du placement potentiel des défenseurs pour bloquer tous les tirs.
 
 \section{Compatibilité de la modélisation choisie avec les extensions}
+\paragraph{Plusieurs buts}
+S'il y a plus buts, le nombre de trajectoires ne fera que s'accroître.
+
+
+\paragraph{Position initiale des joueurs}
+
+
+\paragraph{Distance minimale entre les robots}
+Cette extension ne va pas changer grand sur la résolution du problème, car on va considérer par exemple que cette distance minimale correspond au diamètre du robot.
+
+\paragraph{Gardien}
+
+
+\paragraph{Position initiale des joueurs}
+
+
+\paragraph{Position initiale des joueurs}
 
 
 
