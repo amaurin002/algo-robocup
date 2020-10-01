@@ -39,7 +39,7 @@
 
 \paragraph{La constante $posstep$} Il s'agit de la valeur qui indique l'écart minimal entre deux points de $\mathbb{R}^2$. Cela permet de discrétiser $\mathbb{R}^2$.
 
-\paragraph{La constante $thetastep$} Il s'agit de la valeur minimale de l'angle que doivent former deux droites pour en pas être confondus. Cela permet de discrétiser les angles.
+\paragraph{La constante $thetastep$} Il s'agit de la valeur minimale de l'angle que doivent former deux droites pour ne pas être confondus. Cela permet de discrétiser les angles.
 
 \paragraph{La constante $radius$} Il s'agit du rayon des cercles qui modélisent les robots.
 
@@ -75,7 +75,7 @@ La fonction $collision$ peut être exprimée de la manière suivante :
 \begin{align*}
   collision \colon &F^2 \to \{0, 1 \}\\
   &d_i, d_j \mapsto collision(d_i, d_j) = \begin{cases}
-                                   0 & \text{si $|| d_i - d_j ||_2 < 2R$ avec $R$ la taille du robot} \\
+                                   0 & \text{si $|| d_i - d_j ||_2 < 2radius$ } \\
                                    1 & \text{sinon.}
   \end{cases}
 \end{align*}
@@ -91,7 +91,7 @@ La fonction $collision$ peut être exprimée de la manière suivante :
 La fonction $angle$ retourne l'angle formé par la demi-droite donnée et l'axe des abscisses.
 
 \paragraph{Les tirs cadrés}
-Pour qu'un tir soit cadré, il faut que le tir d'un attaquant traverse le segment du goal dans le bon sens. Cette représentation montre les tirs qui atteignent le but sans prendre en compte les robots. L'ensemble $B_c$ des tirs cadré est exprimé ainsi :
+Pour qu'un tir soit cadré, il faut que le tir d'un attaquant traverse le segment du goal dans le bon sens. Cette représentation montre les tirs qui atteignent le but sans prendre en compte les défenseurs. L'ensemble $B_c$ des tirs cadré est exprimé ainsi :
 
 \begin{equation*}
     B_c = \{ t_{ij} \ / \ \forall i \in \llbracket 1, |A| \rrbracket, \forall j \in \llbracket 1, |T_i| \rrbracket, t_{ij} \cap T \ne \emptyset \wedge sens(t_{ij}, a_i) \}
@@ -136,7 +136,7 @@ Pour qu'un but soit marqué, il faut qu'une droite de tir d'un attaquant travers
 \paragraph{Les positions des défenseurs} Il s'agit d'une liste de points $p_i$ dans $D$ tels que :
 
 \begin{equation*}
-D = \{ \forall i, j \in \llbracket 1, |D| \rrbracket, i \ne j, \neg collision(d_i, d_j) \}.
+D = \{ \forall i, j \in \llbracket 1, |D| \rrbracket, i \ne j, \neg collision(d_i, d_j) \wedge B = \emptyset \}.
 \end{equation*}
 
 Le cardinal de l'ensemble $D$ est par ailleurs borné par le nombre de joueurs. On a ainsi $|D| \leqslant 8$.
@@ -153,46 +153,65 @@ Le cardinal de l'ensemble $D$ est par ailleurs borné par le nombre de joueurs. 
 
 On va modéliser le problème qu'on vient de définir de manière formelle comme un problème de graphe.
 
-\paragraph{Les n\oe uds du graphe}
-Les n\oe uds du graphe sont les points de placement dans le terrain (correspondant à l'ensemble $G$). On note cet ensemble $V$.
+\paragraph{Les n\oe uds représentant les tirs}
+Un tir est un sommet du graphe combinant la position d'un attaquant et un angle $(Att, \theta)$. On ne considère que les tirs cadré. On note l'ensemble de ces sommets $V_t$.
+
+\paragraph{Les n\oe uds représentant les position des défenseurs}
+La position d'un défenseur est un sommet modélisé par un point du terrain. On ne considère que les positions disponibles. On note l'ensemble de ces sommets $V_d$.
+
+\paragraph{Les interceptions}
+Une interception est modélisée comme une arête reliant le tir d'un attaquant à une position de défenseur. On note cet ensemble $E$.
+
+\paragraph{Simplification du graphe}
+On simplifie le graphe en retirant les sommets reliés à aucune arrête (correspondant à des positions de défenseurs n'interceptant aucun tir).
+
+\paragraph{Ensemble dominants}
+Résoudre le problème initial, i.e. trouver le nombre minimal de défenseurs permettant de défendre le but se ramène dans notre modélisation à résoudre le problème de graphe suivant : il faut trouver le plus petit sous ensemble de $V_t$ tel que cet ensemble domine $V_d$.
+
+%todo figure tikz pour modéliser le pb
 
 
-\paragraph{Les n\oe uds du goal}
-Les n\oe uds du goal sont l'ensemble des points de $E_a$ tel que :
 
-\begin{equation*}
-  V_a = \{ x \ / \ \exists y \in T \wedge x \in G \wedge ||xy||_2 < posstep \}
-\end{equation*}
-
-\paragraph{Les n\oe uds des attaquants}
-Les n\oe uds des attaquants sont l'ensemble des points de $A$. On note cet ensemble $V_d$.
-
-\paragraph{Les arêtes}
-On définit une arête entre deux n\oe uds de la manière suivante :
-
-\begin{equation*}
-  E = \{ xy \ / \ x \in F, y _in F, ||xy||_2 = posstep \}
-\end{equation*}
-
-On obtient ainsi une grille.
+%%\paragraph{Les n\oe uds du graphe}
+%%Les n\oe uds du graphe sont les points de placement dans le terrain %%(correspondant à l'ensemble $G$). On note cet ensemble $V$.
+%%
+%%
+%%\paragraph{Les n\oe uds du goal}
+%%Les n\oe uds du goal sont l'ensemble des points de $E_a$ tel que :
+%%
+%%\begin{equation*}
+%%  V_a = \{ x \ / \ \exists y \in T \wedge x \in G \wedge ||xy||_2 < posstep \}
+%%\end{equation*}
+%%
+%%\paragraph{Les n\oe uds des attaquants}
+%%Les n\oe uds des attaquants sont l'ensemble des points de $A$. On note cet %%ensemble $V_d$.
+%%
+%%\paragraph{Les arêtes}
+%%On définit une arête entre deux n\oe uds de la manière suivante :
+%%
+%%\begin{equation*}
+%%  E = \{ xy \ / \ x \in F, y \in F, ||xy||_2 = posstep \}
+%%\end{equation*}
+%%
+%%On obtient ainsi une grille.
 
 \section{Pistes de résolution du problème}
 
-Une fois que l'on a modélisé le problème sous forme de graphe, on peut proposer plusieurs pistes de résolution. Une première piste consiste à appliquer l'algorithme $A*$.
+%Une fois que l'on a modélisé le problème sous forme de graphe, on peut proposer plusieurs pistes de résolution. Une première piste consiste à appliquer l'algorithme $A*$.
 
-\subsection{Algorithme A*}
-Pour rappel, l'algorithme A* consiste, étant donné un graphe, un sommet d'arrivée et un sommet de départ à trouver un chemin (généralement le plus cours) permettant d'aller du sommet de départ au sommet d'arrivée en passant par le graphe donné.
+%\subsection{Algorithme A*}
+%Pour rappel, l'algorithme A* consiste, étant donné un graphe, un sommet d'arrivée et un sommet de départ à trouver un chemin (généralement le plus cours) permettant d'aller du sommet de départ au sommet d'arrivée en passant par le graphe donné.
 
-\paragraph{Le sommet de départ}
-Dans cette définition du problème, le sommet de départ correspond à un attaquant (appartenant à l'ensemble $E_d$).
+%\paragraph{Le sommet de départ}
+%Dans cette définition du problème, le sommet de départ correspond à un attaquant (appartenant à l'ensemble $E_d$).
 
-\paragraph{Le sommet d'arrivée}
-Concernant le sommet d'arrivée, il s'agit plutôt d'un ensemble de sommets. Pour que le chemin soit valide, il suffit d'atteindre l'un de ces sommets. L'ensemble des sommets d'arrivée correspondent à l'ensemble des sommets du goal (l'ensemble $E_a$).
+%\paragraph{Le sommet d'arrivée}
+%Concernant le sommet d'arrivée, il s'agit plutôt d'un ensemble de sommets. Pour que le chemin soit valide, il suffit d'atteindre l'un de ces sommets. L'ensemble des sommets d'arrivée correspondent à l'ensemble des sommets du goal (l'ensemble $E_a$).
 
-\paragraph{Calcul d'un chemin}
-L'objectif de l'algorithme est de calculer un chemin permettant d'aller d'un attaquant à un but. On ajoutera que cette distance doit être bornée par une constante $C$ que l'on définira. Si un tel chemin existe, cela signifie qu'il est possible pour un attaquant de marquer. En calculant l'ensemble des chemins permettant d'aller d'un attaquant au goal et qui ont une longueur plus petite que $C$, on a l'ensemble des tirs de l'atraquant.
+%\paragraph{Calcul d'un chemin}
+%L'objectif de l'algorithme est de calculer un chemin permettant d'aller d'un attaquant à un but. On ajoutera que cette distance doit être bornée par une constante $C$ que l'on définira. Si un tel chemin existe, cela signifie qu'il est possible pour un attaquant de marquer. En calculant l'ensemble des chemins permettant d'aller d'un attaquant au goal et qui ont une longueur plus petite que $C$, on a l'ensemble des tirs de l'atraquant.
 
-L'objectif sera ensuite de déterminer l'ensemble des n\oe uds communs à tous les chemins. Il s'agira du placement potentiel des défenseurs pour bloquer tous les tirs.
+%L'objectif sera ensuite de déterminer l'ensemble des n\oe uds communs à tous les chemins. Il s'agira du placement potentiel des défenseurs pour bloquer tous les tirs.
 
 \section{Compatibilité de la modélisation choisie avec les extensions}
 
