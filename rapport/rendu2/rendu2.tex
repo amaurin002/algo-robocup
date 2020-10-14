@@ -113,7 +113,7 @@ Pour qu'un tir soit non-cadré, il faut que le tir d'un attaquant ne traverse pa
 Pour qu'un tir soit intercepté, il doit dans un premier temps être cadré et rencontrer un obstacle sur le chemin (robot allié ou adverse). L'ensemble $B_i$ est exprimé ainsi :
 
 \begin{equation*}
-    B_i = \{  t_i \ / \ \forall i \in \llbracket 1, |B_c| \rrbracket, \exists ! j \in \llbracket 1, |A| \rrbracket, R_{a_j} \wedge t_i \ne \emptyset \wedge t_i \cap D = \emptyset \}
+    B_i = \{  t_i \ / \ \forall i \in \llbracket 1, |B_c| \rrbracket, \exists ! j \in \llbracket 1, |A| \rrbracket, R_{a_j} \wedge t_i \ne \emptyset \wedge t_i \cap D = \emptyset \} %TODO
 \end{equation*}
 
 
@@ -122,22 +122,20 @@ Pour qu'un tir soit intercepté, il doit dans un premier temps être cadré et r
 Pour qu'un but soit marqué, il faut qu'une demi-droite de tir d'un attaquant traverse le segment du goal dans le bon sens sans rencontrer de robots sur le trajet. L'ensemble $B$ est exprimé ainsi :
 
 \begin{equation*}
-    B = \{t_{ij} \ / \ \forall i \in \llbracket 1, |A| \rrbracket, \forall j \in \llbracket 1, |T_i| \rrbracket, t_{ij}  \in B_c \wedge t_{ij} \notin B_i  \}
+    B = \{t_{ij} \ / \ \forall i \in \llbracket 1, |A| \rrbracket, \forall j \in \llbracket 1, |T_i| \rrbracket, t_{ij}  \in B_c \wedge t_{ij} \notin B_i  \} %TODO
 \end{equation*}
 
 
 
 \subsection{Output}
 
-\paragraph{Les positions des défenseurs} Il s'agit d'une liste de points $p_i$ dans $D$ tels que :
+\paragraph{Les positions des défenseurs} Il s'agit d'un ensemble de points $p_i$ dans $D$ tels que :
 
 \begin{equation*}
 D = \{ \forall i, j \in \llbracket 1, |D| \rrbracket, i \ne j, \neg collision(d_i, d_j) \wedge B = \emptyset \}.
 \end{equation*}
 
-Le cardinal de l'ensemble $D$ est par ailleurs borné par le nombre de joueurs. On a ainsi $|D| \leqslant 8$.
-
-
+Le cardinal de l'ensemble $D$ est par ailleurs borné par le nombre de défenseurs. Selon les règles officielles de la RoboCup Small Size League (SSL)\footnote{\url{https://ssl.robocup.org/}}, les équipes ne peuvent pas excéder 8 joueurs. On a ainsi $|D| \leqslant 8$.
 
 \section{Modélisation du problème}
 
@@ -146,10 +144,10 @@ On va modéliser le problème que l'on vient de définir de manière formelle co
 \subsection{Construction du graphe}
 
 \paragraph{Les n\oe uds représentant les tirs}
-Un tir est est une combinaison entre la position d'un attaquant et un angle $(Att, \theta)$. On ne considère que les tirs cadré. Pour chaque tir cadré, on lui associe un n\oe ud sur notre graphe. On note l'ensemble de ces sommets $V_t$.
+Un tir est est une combinaison entre la position d'un attaquant et un angle $(p_0, \theta)$. On ne considère que les tirs cadré. Pour chaque tir cadré, on lui associe un n\oe ud sur notre graphe. On note l'ensemble de ces sommets $V_t$.
 
 \paragraph{Les n\oe uds représentant les position des défenseurs}
-La position d'un défenseur est modélisée par un point du terrain. On ne considère que les positions disponibles, i.e. l'ensemble des points de $G\textbackslash A$. Pour chaque position de défenseur, on lui associe un n\oe ud sur notre graphe. On note l'ensemble de ces sommets $V_d$.
+La position d'un défenseur est modélisée par un point du terrain. On ne considère que les positions disponibles, i.e. l'ensemble des points de $G$ qui ne sont pas en collision avec au moins un élément de $A$. Pour chaque position de défenseur, on lui associe un n\oe ud sur notre graphe. On note l'ensemble de ces sommets $V_d$.
 
 \paragraph{} L'ensemble des sommets du graphe est alors égale à $V = V_t \cup V_d$.
 
@@ -162,7 +160,7 @@ On simplifie le graphe que l'on vient d'obtenir en retirant les sommets isolés 
 \subsection{Résolution du problème}
 Résoudre le problème initial, i.e. trouver le nombre minimal de défenseurs permettant de défendre le but se ramène dans notre modélisation à résoudre le problème de graphe suivant :
 
-\paragraph{Problème} \textcolor{problem}{Il faut trouver le plus petit sous ensemble de $V_t$ tel que cet ensemble domine $V_d$.}
+\paragraph{Problème} \textcolor{problem}{Il faut trouver le plus petit sous ensemble de $V_d$ tel que cet ensemble domine $V_t$.}
 
 \subsection{Exemple d'application}
 
@@ -216,7 +214,7 @@ La figure \ref{tikz:example} montre un exemple de la modélisation du problème.
 
 Cette section présente la méthode de calcul pour savoir si une arête se situe entre deux sommets du graphe ainsi que différents algorithmes de résolution à notre problème.
 
-\subsection{Interception de tir}
+\subsection{Interception de tir}%TODO revoir cette partie.
 Un tir étant défini à l'aide d'un angle $\theta$ et d'un point $(x_0, y_0)$. Pour déterminer si ce dernier est intercepté par un point, on peut dans un premier retrouver l'équation de la droite :
 
 \begin{align*}
@@ -237,11 +235,11 @@ avec $Ax+By+C = 0$ l'équation de la droite et $(x_0, y_0)$ la position du défe
  Si cette distance est inférieure à $R$ (rayon du robot), alors le tir est intercepté.
 
 \subsection{Utilisation d'un algorithme exhaustif}
-Pour résoudre le problème d'ensemble dominant dans notre graphe, on peut dans un premier temps utiliser un algortihme exhaustif, qui, pour toute configuration d'ensemble de sommets dans $V_d$, vérifie s'il est dominant, et le conserve si c'est le cas. Ensuite, l'algorithme renvoie un ensemble dominant de taille minimale. L'avantage est qu'on aura la meilleure solution possible.
+Pour résoudre le problème d'ensemble dominant dans notre graphe, on peut dans un premier temps utiliser un algorithme exhaustif, qui, pour toute configuration d'ensemble de sommets dans $V_d$, vérifie si elle est dominante, et la conserve si c'est le cas. Une fois que l'on a la liste de tous les ensembles dominants, on retourne l'ensemble ayant la plus petite taille. L'avantage est qu'on aura la meilleure solution possible.
 
 \paragraph{Complexité} La complexité de cet algorithme est en $\mathcal{O}(2^{|V_d|})$\footnote{On code chaque sommet des défenseurs par 0 s'il ne fait pas parti de l'ensemble dominant et 1 sinon. Tester ensuite toutes les combinaisons donne cette complexité exponentielle.}.
 
-Le désaventage de cet algorithme est le coût en temps qui, si le nombre de sommets de positions des défenseurs est grand, peut être problématique pour obtenir une solution rapidement. L'algorithme évoqué dans la section suivante permettra de réduire les temps de  calcul.
+Le désavantage de cet algorithme est le coût en temps qui, si le nombre de sommets de positions des défenseurs est grand, peut être problématique pour obtenir une solution rapidement. L'algorithme évoqué dans la section suivante permettra de réduire les temps de  calcul.
 
 \subsection{Utilisation d'un algorithme Branch and Reduce}
 
@@ -262,14 +260,14 @@ Dans cet article, l'algorithme travaille sur des graphes marqués, i.e. des grap
 
 \section{Compatibilité de la modélisation choisie avec les extensions}
 
-Cette section les avantages et inconvénients de notre modélisation par rapport aux extensions à déveloper.
+Cette section présente les avantages et inconvénients de notre modélisation par rapport aux extensions à déveloper.
 
 \paragraph{Plusieurs buts}
 S'il y a plusieurs buts, le nombre de trajectoires ne fera que s'accroître. Si $V_{ti}$ correspond aux tirs cadrés dans le goal $i$ et qu'il y a $n$ buts, alors $V_t = V_{t1} \cap \cdots \cap V_{tn}$.
 
 
 \paragraph{Position initiale des joueurs}
-Dans le cas ou la position initiale des défenseurs est connue, on peut introduire un paramètre $movestep$ qui symbolise la distance maximale qu'un défenseur peut parcourir pour intercépter le tir. Les changements dans notre modèle sont les suivants :
+Dans le cas ou la position initiale des défenseurs est connue, on peut introduire un paramètre $movestep$ qui symbolise la distance maximale qu'un défenseur peut parcourir pour intercepter le tir. Les changements dans notre modèle sont les suivants :
 
 \begin{itemize}
   \item Les positions des défenseurs ne sont plus tous les points de $G \textbackslash A$ mais tous les points du terrains à portée de déplacement des défenseurs.
@@ -278,9 +276,9 @@ Dans le cas ou la position initiale des défenseurs est connue, on peut introdui
 
 \paragraph{Distance minimale entre les robots}
 %Cette extension ne va pas changer grand sur la résolution du problème, car on va considérer par exemple que cette distance minimale correspond au diamètre du robot.
-Dans le cas ou les robots nécéssitent de respecter une distance minimale, nous pouvons introduire un paramètre $D$ modélisant la distance minimale de deux robots.
+Dans le cas ou les robots nécessitent de respecter une distance minimale, nous pouvons introduire un paramètre $D$ modélisant la distance minimale de deux robots.
 
-Pour prendre en compte cette contrainte, il faut légèrement changer notre modélisation. \'A partir du sous-graphe $G'$ comportant les sommets $V_d$, on place une arête entre deux sommets si les positions des défenseurs sont à une distance inférieure à $D$. La solution de positionnement des défenseurs doit être un stable de $G'$.
+Pour prendre en compte cette contrainte, il faut légèrement changer notre modélisation. À partir du sous-graphe $G'$ comportant les sommets $V_d$, on place une arête entre deux sommets si les positions des défenseurs sont à une distance inférieure à $D$. La solution de positionnement des défenseurs doit être un stable de $G'$.
 
 
 
@@ -295,7 +293,7 @@ La solution de positionnement des défenseurs ne doit autoriser le placement que
 
 \paragraph{Trajectoires courbées}
 Pour pouvoir gérer des trajectoires courbées, il faut introduire un nouveau paramètre $alpha$ qui est la courbure maximale de la courbe. Lors du calcul des trajectoires des tirs cadrés, il ne faudra pas seulement prendre en compte les tirs rectilignes mais aussi les tirs courbées (discrétisés par $thetastep$).
-Cette extension ne nécessite pas vraiment de changements dans notre modélision à part à la définition des tirs. Un tir est maintenant modélisé par un point, un angle et une courbure $((x,y), \theta, \alpha)$. Cela aura tendance à angmenter le nombre de sommets modélisant des tirs seulement, mais la résolution de l'algorithme reste similaire.
+Cette extension ne nécessite pas vraiment de changements dans notre modélisation à part à la définition des tirs. Un tir est maintenant modélisé par un point, un angle et une courbure $((x,y), \theta, \alpha)$. Cela aura tendance à augmenter le nombre de sommets modélisant des tirs seulement, mais la résolution de l'algorithme reste similaire.
 
 
 \end{document}
