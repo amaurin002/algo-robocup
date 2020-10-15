@@ -70,10 +70,18 @@ Autrement dit, il s'agit de la grille de points contenant l'origine du plan et d
 \end{equation*}
 
 
-\paragraph{Les positions des adversaires} Il s'agit d'un ensemble de points $p_i$ tel que :
+\paragraph{Les positions des attaquants} Il s'agit d'un ensemble de points représentant les points centraux des attaquants tel que :
+\label{section:size_team}
+\begin{equation*}
+    A = \{ p \in F \}.
+\end{equation*}
+
+Le cardinal de l'ensemble $A$ est par ailleurs borné par le nombre d'attaquants. Selon les règles officielles de la RoboCup Small Size League (SSL)\footnote{\url{https://ssl.robocup.org/}}, les équipes ne peuvent pas excéder 8 joueurs. On a ainsi $|A| \leqslant 8$. On suppose dans ce problème qu'il existe au moins un attaquant pour que le problème soit intéressant.
+
+Une propriété que doit satisfaire les attaquants est qu'il ne doit pas y avoir de collisions lors de leur placement :
 
 \begin{equation*}
-    A = \{ \forall i, j \in \llbracket 1, |A| \rrbracket, i \ne j, \neg collision(a_i, a_j) \}. %TODO
+\forall i, j \in \llbracket 1, |A| \rrbracket, i \ne j, \neg collision(a_i, a_j)
 \end{equation*}
 
 La fonction $collision$ peut être exprimée de la manière suivante :
@@ -98,7 +106,7 @@ La fonction $collision$ peut être exprimée de la manière suivante :
 Pour qu'un tir soit cadré, il faut que le tir d'un attaquant traverse le segment du goal dans le bon sens (le produit scalaire entre le vecteur du goal et celui de la droite de tir est strictement négatif). Cette représentation montre les tirs qui atteignent le but sans prendre en compte les défenseurs. L'ensemble $B_c$ des tirs cadré est exprimé ainsi :
 
 \begin{equation*}
-    B_c = \{ t_{ij} \ / \ \forall i \in \llbracket 1, |A| \rrbracket, \forall j \in \llbracket 1, |T_i| \rrbracket, t_{ij} \cap T \ne \emptyset \wedge (t_{ij}|g) < 0  \} %TODO
+    B_c = \{ b \in B \ | \ , b \cap G \ne \emptyset \wedge (b|g) < 0  \}
 \end{equation*}
 
 
@@ -113,7 +121,7 @@ Pour qu'un tir soit non-cadré, il faut que le tir d'un attaquant ne traverse pa
 Pour qu'un tir soit intercepté, il doit dans un premier temps être cadré et rencontrer un obstacle sur le chemin (robot allié ou adverse). L'ensemble $B_i$ est exprimé ainsi :
 
 \begin{equation*}
-    B_i = \{  t_i \ / \ \forall i \in \llbracket 1, |B_c| \rrbracket, \exists ! j \in \llbracket 1, |A| \rrbracket, R_{a_j} \wedge t_i \ne \emptyset \wedge t_i \cap D = \emptyset \} %TODO
+    B_i = \{  b \in B_c \ | \ \forall i \in \llbracket 1, |B_c| \rrbracket, \exists ! j \in \llbracket 1, |A| \rrbracket, R_{a_j} \wedge t_i \ne \emptyset \wedge t_i \cap D = \emptyset \} %TODO
 \end{equation*}
 
 
@@ -135,7 +143,7 @@ Pour qu'un but soit marqué, il faut qu'une demi-droite de tir d'un attaquant tr
 D = \{ \forall i, j \in \llbracket 1, |D| \rrbracket, i \ne j, \neg collision(d_i, d_j) \wedge B = \emptyset \}.
 \end{equation*}
 
-Le cardinal de l'ensemble $D$ est par ailleurs borné par le nombre de défenseurs. Selon les règles officielles de la RoboCup Small Size League (SSL)\footnote{\url{https://ssl.robocup.org/}}, les équipes ne peuvent pas excéder 8 joueurs. On a ainsi $|D| \leqslant 8$.
+Le cardinal de l'ensemble $D$ est par ailleurs borné par le nombre de défenseurs comme défini en section \ref{section:size_team}. On a ainsi $|D| \leqslant 8$.
 
 \section{Modélisation du problème}
 
