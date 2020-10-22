@@ -209,7 +209,7 @@ class BrutForce:
         Creates a graph modeling the problem.
         """
         self.G = nx.Graph()
-        self.G.add_nodes_from(range(len(self.Bc)), weight = 1)
+        self.G.add_nodes_from(range(len(self.Bc)), weight = 100)
         self.G.add_nodes_from(range(len(self.Bc), len(self.nodes)), weight = 1)
         self.G.add_edges_from(self.edges)
         sub = [self.G.subgraph(c).copy() for c in nx.connected_components(self.G)]
@@ -218,7 +218,39 @@ class BrutForce:
         print("lenBc", len(self.Bc))#self.Bc[11], self.Bc[12])
         #print("toto", naa.min_weighted_dominating_set(sub[1]))
         print(len(self.edges), len(self.nodes))
+        G = nx.path_graph(4)
+        print([n for n in G.neighbors(3)])
+        print("brutforce", self.brutForce(self.G))
+
+    def brutForce(self, G, k = 8):
+        if (k < 0):
+            return 9
+        sets = []
+        nodes = list(G.nodes)
+        for i in nodes:
+            if (i < len(self.Bc)):
+                continue
+            #print("t", i, k)
+            H = G.copy()
+            neighbors = list(H.neighbors(i))
+            for j in neighbors:
+                H.remove_node(j)
+            H.remove_node(i)
+            if (list(H.nodes)[0] >= len(self.Bc)):
+                if (8-k) <= 4:
+                    print("test")
+                return 8 - k
+            sets.append(self.brutForce(H, k - 1))
+        return max(sets)
+
 
 if __name__ == "__main__":
     filename =  sys.argv[1]
     BrutForce = BrutForce(filename)
+    print("###########")
+    G = nx.Graph()
+    G.add_nodes_from(range(1, 6), weight = 1)
+    G.add_nodes_from(range(6, 11), weight = 100)
+    G.add_edges_from([(1, 6), (2, 6), (2, 7), (2, 8), (3, 8), (3, 9), (4, 9), (4, 10), (5, 6)])
+    print(naa.min_weighted_dominating_set(G, 2))
+    print(nx.is_dominating_set(G, naa.min_weighted_dominating_set(G, 2)))
