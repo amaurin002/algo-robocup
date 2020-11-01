@@ -24,7 +24,6 @@ class BrutForce:
         self.computingShoots()
 
         self.shotsOnTarget()
-        print(len(self.Bc), len(self.Bnc))
 
         self.computingGraph()
         self.creatingGraph()
@@ -59,6 +58,8 @@ class BrutForce:
         """
         (a1, b1, c1) = l1
         (a2, b2, c2) = l2
+        c1 = -c1
+        c2 = -c2
         det = a1 * b2 - b1 * a2
         if (det == 0):
             return None
@@ -93,7 +94,7 @@ class BrutForce:
         if ((a != -pi/2) or (a != pi/2)):
             return ((1, tan(a), - i - j * tan(a)), (d1, d2))
         else:
-            return ((1, 0, j), (d1, d2))
+            return ((1, 0, -i), (d1, d2))
 
 
     def goalToCart(self, g):
@@ -105,11 +106,11 @@ class BrutForce:
         if (g[1][0] - g[0][0] == 0):
             a = 1
             b = 0
-            c = g[1][0]
+            c = - g[1][0]
         else:
             a = (g[1][1] - g[0][1]) / (g[1][0] - g[0][0])
             b = 1
-            c = g[0][1] - a * g[0][0]
+            c = - g[0][1] - a * g[0][0]
         return (a, b, c)
 
 
@@ -132,7 +133,6 @@ class BrutForce:
             return False
         if ((y < min(gc[0][1], gc[1][1])-eps) or (y > max(gc[0][1], gc[1][1])+eps)):
             return False
-
         # Checks if the shoot is in the good direction.
         if (np.dot(gd, np.array(d)) > 0):
             return False
@@ -163,7 +163,7 @@ class BrutForce:
         """
         (x, y) = pos
         ((a, b, c), (ox, oy), (dx, dy)) = shoot
-        d = (a * x + b * y + c) / math.sqrt(a**2 + b**2)
+        d = abs(a * x + b * y + c) / math.sqrt(a**2 + b**2)
         if (d > self.robot_radius):
             return False
         if (dx == 0):
@@ -213,35 +213,64 @@ class BrutForce:
         self.G.add_nodes_from(range(len(self.Bc), len(self.nodes)), weight = 1)
         self.G.add_edges_from(self.edges)
         sub = [self.G.subgraph(c).copy() for c in nx.connected_components(self.G)]
-        #print(sorted(nx.connected_components(self.G), key=len, reverse=True))
-        print(len(sub))
-        print("lenBc", len(self.Bc))#self.Bc[11], self.Bc[12])
         #print("toto", naa.min_weighted_dominating_set(sub[1]))
-        print(len(self.edges), len(self.nodes))
-        G = nx.path_graph(4)
-        print([n for n in G.neighbors(3)])
-        print("brutforce", self.brutForce(self.G))
+        #print("position", min(self.nodes[20:], key =operator.itemgetter(1)))
+        #print(self.brutForce(sub[1]))
+        import numpy as np
+        import matplotlib.pyplot as plt
+        #for (x, y) in self.nodes[22:]:
+        #    plt.scatter(x, y)
+        #plt.show()
+        for i in sub:
+            ret = True
+            k = 8
+            while (ret != None):
+                ret = self.brutForce(i, list(range(len(self.Bc))), k)
+                print("brutforce", ret)
+                k = k-1
 
-    def brutForce(self, G, k = 8):
-        if (k < 0):
-            return 9
-        sets = []
+    def brutForce(self, G, Bc, k = 8):
+        if (k <= 0):
+            return None
+        configs = []
         nodes = list(G.nodes)
         for i in nodes:
+            Bcc = Bc.copy()
             if (i < len(self.Bc)):
                 continue
             #print("t", i, k)
-            H = G.copy()
-            neighbors = list(H.neighbors(i))
+            #H = G.copy()
+            #neighbors = list(H.neighbors(i))
+            #for j in neighbors:
+            #    H.remove_node(j)
+            #H.remove_node(i)
+            neighbors = list(G.neighbors(i))
+            sub_neighbors = []
             for j in neighbors:
-                H.remove_node(j)
-            H.remove_node(i)
-            if (list(H.nodes)[0] >= len(self.Bc)):
-                if (8-k) <= 4:
-                    print("test")
-                return 8 - k
-            sets.append(self.brutForce(H, k - 1))
-        return max(sets)
+                sub_neighbors.append(list(G.edges(j)))
+                G.remove_node(j)
+                if (j < len(self.Bc)):
+                    Bcc.remove(j)
+            G.remove_node(i)
+            if (Bcc == []):
+                G.add_node(i)
+                G.add_nodes_from(neighbors)
+                for j in range(len(neighbors)):
+                    G.add_edges_from(sub_neighbors[j])
+                return [i]
+            node = self.brutForce(G, Bcc, k - 1)
+            G.add_node(i)
+            G.add_nodes_from(neighbors)
+            for j in range(len(neighbors)):
+                G.add_edges_from(sub_neighbors[j])
+            if (node != None):
+                return node + [i]
+
+        return None
+        #if (configs == []):
+        #    return None
+        #index = configs.index(min(configs, key = len))
+        #return configs[index]
 
 
 if __name__ == "__main__":
@@ -252,5 +281,11 @@ if __name__ == "__main__":
     G.add_nodes_from(range(1, 6), weight = 1)
     G.add_nodes_from(range(6, 11), weight = 100)
     G.add_edges_from([(1, 6), (2, 6), (2, 7), (2, 8), (3, 8), (3, 9), (4, 9), (4, 10), (5, 6)])
-    print(naa.min_weighted_dominating_set(G, 2))
-    print(nx.is_dominating_set(G, naa.min_weighted_dominating_set(G, 2)))
+    k = list(G.edges(4))
+    G.remove_node(4)
+    print(k)
+    G.add_node(4)
+    k = list(G.edges(4))
+    print(k)
+    #print("test", naa.min_weighted_dominating_set(G, 2))
+    #print("test", BrutForce.brutForce(G, k=3))
