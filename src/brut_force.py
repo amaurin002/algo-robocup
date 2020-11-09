@@ -2,11 +2,11 @@ import sys
 import json
 import numpy as np
 import networkx as nx
-import networkx.algorithms.approximation as naa
 import networkx.algorithms.components.connected as nacc
-from math import pi
-from math import tan, cos, sin
+from math import tan, cos, sin, pi
 import math
+import numpy as np
+import matplotlib.pyplot as plt
 
 class BrutForce:
     def __init__(self, filename):
@@ -19,6 +19,13 @@ class BrutForce:
         self.pos_step = problem["pos_step"]
         self.theta_step = problem["theta_step"]
         self.robot_radius = problem["robot_radius"]
+
+        if ("goalkeeper_area" in problem):
+            self.goalkeeper_area = problem["goalkeeper_area"]
+        else:
+            self.goalkeeper_area = None
+
+        self.maxPlayers = 8
 
         self.computingField()
         self.computingShoots()
@@ -33,9 +40,34 @@ class BrutForce:
         Computes positions for defensors.
         """
         self.T = []
+        self.TG = []
         for i in np.arange(self.field_limits[0][0], self.field_limits[0][1], self.pos_step):
             for j in np.arange(self.field_limits[1][0], self.field_limits[1][1], self.pos_step):
-                self.T.append((i, j))
+                if (self.goalkeeper_area == None):
+                    self.T.append((i, j))
+                else:
+                    if (self.isInGoalArea((i, j))):
+                        self.TG.append((i, j))
+                    else:
+                        self.T.append((i, j))
+
+
+    def isInGoalArea(self, p, eps = 1e-4):
+        """
+        Checks if a point is in the goal area.
+        Input: p = (x, y)
+        Output: True / False
+        """
+        (x, y) = p
+        if (x <= min(self.goalkeeper_area[0]) - eps):
+            return False
+        if (x >= max(self.goalkeeper_area[0]) + eps):
+            return False
+        if (y <= min(self.goalkeeper_area[1]) - eps):
+            return False
+        if (y >= max(self.goalkeeper_area[1]) + eps):
+            return False
+        return True
 
 
     def computingShoots(self):
@@ -133,8 +165,9 @@ class BrutForce:
             return False
         if ((y < min(gc[0][1], gc[1][1])-eps) or (y > max(gc[0][1], gc[1][1])+eps)):
             return False
+        print(x, y)
         # Checks if the shoot is in the good direction.
-        if (np.dot(gd, np.array(d)) > 0):
+        if (np.dot(gd, np.array(d)) >= 0):
             return False
         return True
 
@@ -174,6 +207,11 @@ class BrutForce:
 
 
     def isCollisionOpponent(self, pos):
+        """
+        Checks if the position can be used for a defensors.
+        Input : pos (x, y)
+        Output: True / False
+        """
         (x, y) = pos
         for (ox, oy) in self.opponents:
             d = math.sqrt((x - ox)**2 + (y - oy)**2)
@@ -189,17 +227,21 @@ class BrutForce:
         self.edges = []
         self.nodes = self.Bc.copy()
         k = 0
-        for i in range(len(self.T)):
-            if (self.isCollisionOpponent(self.T[i])):
+        POS = self.T + self.TG
+        self.nbT = len(self.T)
+        for i in range(len(POS)):
+            if (len(self.T) == i):
+                self.nbT = len(self.Bc) + i - k
+            if (self.isCollisionOpponent(POS[i])):
                 k = k + 1
                 continue
             neighbour = False
             for j in range(len(self.Bc)):
-                if (self.isIntercepted(self.T[i], self.Bc[j])):
+                if (self.isIntercepted(POS[i], self.Bc[j])):
                     neighbour = True
                     self.edges.append((len(self.Bc) + i - k, j))
             if (neighbour):
-                self.nodes.append(self.T[i])
+                self.nodes.append(POS[i])
             else:
                 k = k + 1
 
@@ -212,31 +254,62 @@ class BrutForce:
         self.G.add_nodes_from(range(len(self.Bc)), weight = 100)
         self.G.add_nodes_from(range(len(self.Bc), len(self.nodes)), weight = 1)
         self.G.add_edges_from(self.edges)
-        sub = [self.G.subgraph(c).copy() for c in nx.connected_components(self.G)]
-        #print("toto", naa.min_weighted_dominating_set(sub[1]))
-        #print("position", min(self.nodes[20:], key =operator.itemgetter(1)))
-        #print(self.brutForce(sub[1]))
-        import numpy as np
-        import matplotlib.pyplot as plt
-        #for (x, y) in self.nodes[22:]:
-        #    plt.scatter(x, y)
-        #plt.show()
-        for i in sub:
-            ret = True
-            k = 8
-            while (ret != None):
-                ret = self.brutForce(i, list(range(len(self.Bc))), k)
-                print("brutforce", ret)
-                k = k-1
+        subG = [self.G.subgraph(c).copy() for c in nx.connected_components(self.G)]
+        for (x, y) in self.nodes[len(self.Bc):]:
+            plt.scatter(x, y)
+        print(self.Bc)
+        plt.scatter(-4.5, -3)
+        plt.show()
+        self.dominatingSet = []
+        for i in subG:
+            ret = None
+            k = 0
+            while ((ret == None) or (k == self.maxPlayers + 1)):
+                # If the goal area needs to be empty
+                #ret = self.brutForce(i, list(range(len(self.Bc))), k, False)
+                ret = self.brutForce(i, list(range(len(self.Bc))), k, True)
+                k = k + 1
+            if (ret == None):
+                raise Exception("This configuration can't be defended.")
+            self.dominatingSet += ret
+        if (len(self.dominatingSet) > self.maxPlayers):
+            raise Exception("This configuration can't be defended.")
 
-    def brutForce(self, G, Bc, k = 8):
+            # ((1, -0.9999889804451221, -0.5), array([0.5, 0. ]), (1, -1)
+            #((1, -0.9999742878941748, -0.5), array([0.5, 0. ]), (-1, 1)),
+
+    def roundClosest(self, p):
+        c = []
+        for a in p:
+            res = a % self.pos_step
+            if (res >= self.pos_step / 2):
+                a = a + self.pos_step
+            a = a - res
+            c.append(a)
+        return c
+
+
+    def saveJSon(self, filename):
+        defense = []
+        for i in self.dominatingSet:
+            defense.append(self.roundClosest(self.nodes[i]))
+        data = {}
+        data["defenders"] = defense
+        with open(filename + '.json', 'w') as outfile:
+            json.dump(data, outfile, sort_keys = True, indent = 4,
+                      separators = (',', ': '))
+
+
+    def brutForce(self, G, Bc, k, area):
         if (k <= 0):
             return None
         configs = []
         nodes = list(G.nodes)
-        for i in nodes:
+        for i in range(len(nodes)):
+            if ((not area) and (nodes[i] >= self.nbT)):
+                continue
             Bcc = Bc.copy()
-            if (i < len(self.Bc)):
+            if (nodes[i] < len(self.Bc)):
                 continue
             #print("t", i, k)
             #H = G.copy()
@@ -244,27 +317,30 @@ class BrutForce:
             #for j in neighbors:
             #    H.remove_node(j)
             #H.remove_node(i)
-            neighbors = list(G.neighbors(i))
+            neighbors = list(G.neighbors(nodes[i]))
             sub_neighbors = []
             for j in neighbors:
                 sub_neighbors.append(list(G.edges(j)))
                 G.remove_node(j)
                 if (j < len(self.Bc)):
                     Bcc.remove(j)
-            G.remove_node(i)
+            G.remove_node(nodes[i])
             if (Bcc == []):
-                G.add_node(i)
+                G.add_node(nodes[i])
                 G.add_nodes_from(neighbors)
                 for j in range(len(neighbors)):
                     G.add_edges_from(sub_neighbors[j])
-                return [i]
-            node = self.brutForce(G, Bcc, k - 1)
+                return [nodes[i]]
+            if (nodes[i] >= self.nbT):
+                node = self.brutForce(G, Bcc, k - 1, False)
+            else:
+                node = self.brutForce(G, Bcc, k - 1, area)
             G.add_node(i)
             G.add_nodes_from(neighbors)
             for j in range(len(neighbors)):
                 G.add_edges_from(sub_neighbors[j])
             if (node != None):
-                return node + [i]
+                return node + [nodes[i]]
 
         return None
         #if (configs == []):
@@ -274,18 +350,8 @@ class BrutForce:
 
 
 if __name__ == "__main__":
+    if (len(sys.argv) != 3):
+        raise Exception("Usage : ./brut_force filename_problem filename_solution")
     filename =  sys.argv[1]
     BrutForce = BrutForce(filename)
-    print("###########")
-    G = nx.Graph()
-    G.add_nodes_from(range(1, 6), weight = 1)
-    G.add_nodes_from(range(6, 11), weight = 100)
-    G.add_edges_from([(1, 6), (2, 6), (2, 7), (2, 8), (3, 8), (3, 9), (4, 9), (4, 10), (5, 6)])
-    k = list(G.edges(4))
-    G.remove_node(4)
-    print(k)
-    G.add_node(4)
-    k = list(G.edges(4))
-    print(k)
-    #print("test", naa.min_weighted_dominating_set(G, 2))
-    #print("test", BrutForce.brutForce(G, k=3))
+    BrutForce.saveJSon(sys.argv[2])
