@@ -146,7 +146,7 @@ class BrutForce:
         return (a, b, c)
 
 
-    def isInGoal(self, l, g, eps = 1e-4):
+    def isInGoal(self, l, g, eps = 1e-6):
         """
         Checks if the shoot l is in the goal g.
         Input: l = ((x, y), alpha) the polar coordinates
@@ -165,10 +165,10 @@ class BrutForce:
             return False
         if ((y < min(gc[0][1], gc[1][1])-eps) or (y > max(gc[0][1], gc[1][1])+eps)):
             return False
-        print(x, y)
         # Checks if the shoot is in the good direction.
         if (np.dot(gd, np.array(d)) >= 0):
             return False
+        self.INTER.append(inter)
         return True
 
 
@@ -178,6 +178,7 @@ class BrutForce:
         """
         self.Bc = []
         self.Bnc = []
+        self.INTER = []
         for (o, a) in self.B:
             for g in self.goals:
                 (cart, direction) = self.polToCart((o, a))
@@ -187,11 +188,12 @@ class BrutForce:
                     self.Bnc.append((cart, o, direction))
 
 
-    def isIntercepted(self, pos, shoot):
+    def isIntercepted(self, pos, shoot, index):
         """
         Checks if a position can intercept a shoot.
         Input: pos (x, y)
                shoot (a, b, c) such that a*x + b*y + c = 0
+               inter index
         Output: True / False
         """
         (x, y) = pos
@@ -199,6 +201,12 @@ class BrutForce:
         d = abs(a * x + b * y + c) / math.sqrt(a**2 + b**2)
         if (d > self.robot_radius):
             return False
+        if (index < len(self.Bc)):
+            (ix, iy) = self.INTER[index]
+            d1 = math.sqrt((ox - ix)**2 + (oy - iy)**2)
+            d2 = math.sqrt((x - ox)**2 + (y - oy)**2)
+            if (d1 <= d2):
+                return False
         if (dx == 0):
             k = (y - oy) / dy
         else:
@@ -237,7 +245,7 @@ class BrutForce:
                 continue
             neighbour = False
             for j in range(len(self.Bc)):
-                if (self.isIntercepted(POS[i], self.Bc[j])):
+                if (self.isIntercepted(POS[i], self.Bc[j], j)):
                     neighbour = True
                     self.edges.append((len(self.Bc) + i - k, j))
             if (neighbour):
@@ -255,28 +263,33 @@ class BrutForce:
         self.G.add_nodes_from(range(len(self.Bc), len(self.nodes)), weight = 1)
         self.G.add_edges_from(self.edges)
         subG = [self.G.subgraph(c).copy() for c in nx.connected_components(self.G)]
-        for (x, y) in self.nodes[len(self.Bc):]:
-            plt.scatter(x, y)
-        print(self.Bc)
-        plt.scatter(-4.5, -3)
-        plt.show()
+        #for (x, y) in self.nodes[len(self.Bc):]:
+        #    plt.scatter(x, y)
+        #plt.scatter(-4.5, -3)
+        #plt.show()
         self.dominatingSet = []
         for i in subG:
             ret = None
             k = 0
-            while ((ret == None) or (k == self.maxPlayers + 1)):
+            Bc = []
+            for j in i.nodes:
+                if (j < len(self.Bc)):
+                    Bc.append(j)
+            while ((ret == None) and (k <= self.maxPlayers)):
                 # If the goal area needs to be empty
                 #ret = self.brutForce(i, list(range(len(self.Bc))), k, False)
-                ret = self.brutForce(i, list(range(len(self.Bc))), k, True)
+                ret = self.brutForce(i, Bc, k, True)
+                if (ret == None):
+                    print("No solution for", k, "defendors")
                 k = k + 1
             if (ret == None):
                 raise Exception("This configuration can't be defended.")
             self.dominatingSet += ret
+            if (len(self.dominatingSet) > self.maxPlayers):
+                break
         if (len(self.dominatingSet) > self.maxPlayers):
             raise Exception("This configuration can't be defended.")
 
-            # ((1, -0.9999889804451221, -0.5), array([0.5, 0. ]), (1, -1)
-            #((1, -0.9999742878941748, -0.5), array([0.5, 0. ]), (-1, 1)),
 
     def roundClosest(self, p):
         c = []

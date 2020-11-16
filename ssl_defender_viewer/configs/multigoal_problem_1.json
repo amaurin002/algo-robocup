@@ -11,7 +11,7 @@
         },
         {
             "posts" : [[2.25, 1.75], [2.5,2.0]],
-            "direction" : [1,1]
+            "direction" : [1,-1]
         }
     ],
     "opponents" : [
