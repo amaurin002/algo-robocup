@@ -263,9 +263,14 @@ class BrutForce:
         self.G.add_nodes_from(range(len(self.Bc), len(self.nodes)), weight = 1)
         self.G.add_edges_from(self.edges)
         subG = [self.G.subgraph(c).copy() for c in nx.connected_components(self.G)]
+        print(len(self.T))
+        print(len(self.B))
+        print(len(self.Bc))
+        print(len(self.nodes[len(self.Bc):]))
         #for (x, y) in self.nodes[len(self.Bc):]:
         #    plt.scatter(x, y)
-        #plt.scatter(-4.5, -3)
+        #plt.gca().set_xlim(-4.5, 4.5)
+        #plt.gca().set_ylim(-3, 3)
         #plt.show()
         self.dominatingSet = []
         for i in subG:

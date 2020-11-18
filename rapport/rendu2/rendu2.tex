@@ -117,24 +117,6 @@ Pour qu'un tir soit non-cadré, il faut que le tir d'un attaquant ne traverse pa
     B_{nc} = B \textbackslash B_c
 \end{equation*}
 
-\paragraph{Les tirs interceptés}
-Pour qu'un tir soit intercepté, il doit dans un premier temps être cadré et rencontrer un obstacle sur le chemin (robot allié ou adverse). L'ensemble $B_i$ est exprimé ainsi :
-
-\begin{equation*}
-    B_i = \{  b \in B_c \ | \ \forall i \in \llbracket 1, |B_c| \rrbracket, \exists ! j \in \llbracket 1, |A| \rrbracket, R_{a_j} \wedge t_i \ne \emptyset \wedge t_i \cap D = \emptyset \} %TODO
-\end{equation*}
-
-
-
-\paragraph{Les tirs réussis}
-Pour qu'un but soit marqué, il faut qu'une demi-droite de tir d'un attaquant traverse le segment du goal dans le bon sens sans rencontrer de robots sur le trajet. L'ensemble $B$ est exprimé ainsi :
-
-\begin{equation*}
-    B = \{t_{ij} \ / \ \forall i \in \llbracket 1, |A| \rrbracket, \forall j \in \llbracket 1, |T_i| \rrbracket, t_{ij}  \in B_c \wedge t_{ij} \notin B_i  \} %TODO
-\end{equation*}
-
-
-
 \subsection{Output}
 
 \paragraph{Les positions des défenseurs} Il s'agit d'un ensemble de points $p_i$ dans $D$ tels que :
@@ -217,12 +199,7 @@ La figure \ref{tikz:example} montre un exemple de la modélisation du problème.
 \caption{Exemple du problème où les 5 tirs sont bloqués par deux défenseurs 1 et 4.}
 \end{figure}
 
-
-\section{Pistes de résolution du problème}
-
-Cette section présente la méthode de calcul pour savoir si une arête se situe entre deux sommets du graphe ainsi que différents algorithmes de résolution à notre problème.
-
-\subsection{Interception de tir}%TODO revoir cette partie.
+\subsection{Interception de tir}
 Un tir étant défini à l'aide d'un angle $\theta$ et d'un point $(x_0, y_0)$. Pour déterminer si ce dernier est intercepté par un point, on peut dans un premier retrouver l'équation de la droite :
 
 \begin{align*}
@@ -235,43 +212,51 @@ x & = x_0  & \text{ avec $y \leqslant 0$ si } \theta = -\frac{\pi}{2} \\
 Une fois qu'on a l'équation de la demi-droite modélisant le tir, pour vérifier s'il y a une interception d'un tir à une position d'un défenseur on calcule la distance minimale entre la demi-droite de tir et le point position du défenseur. Cette distance est calculée à partir de la formule suivante :
 
 \begin{equation*}
-  d = \frac{Ax_0 + By_0 + C}{\sqrt{A^2+B^2}}
+  d = \frac{|Ax_0 + By_0 + C|}{\sqrt{A^2+B^2}}
 \end{equation*}
 
 avec $Ax+By+C = 0$ l'équation de la droite et $(x_0, y_0)$ la position du défenseur.
 
  Si cette distance est inférieure à $R$ (rayon du robot), alors le tir est intercepté.
 
+\subsection{Récupération des positions}
+
+Les figures \ref{figure:terrain_placements} et \ref{figure:terrain_tirs} permettent de voir les positions du terrain qui sont utilisées dans notre grpahe par rapport aux tirs des attaquants. Dans cette exemple, l'algorithme a compté 75 tirs cadrés parmis les 300 tirs possibles. Ensuite, l'algorithme a gardé dans le graphe 726 positions qui interceptaient des tirs parmis les 5400 positions disponibles.
+
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width = 13cm]{terrain_placements.png}
+  \caption{Exemple de carte des positions interceptant les tirs.}
+  \label{figure:terrain_placements}
+\end{figure}
+
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width = 13cm]{terrain_tirs.png}
+  \caption{Exemple de carte des tirs sur le même problème.}
+  \label{figure:terrain_tirs}
+\end{figure}
+
+\section{Pistes de résolution du problème}
+
+Cette section présente la méthode de calcul pour savoir si une arête se situe entre deux sommets du graphe ainsi que différents algorithmes de résolution à notre problème.
+
+
 \subsection{Utilisation d'un algorithme exhaustif}
 Pour résoudre le problème d'ensemble dominant dans notre graphe, on peut dans un premier temps utiliser un algorithme exhaustif, qui, pour toute configuration d'ensemble de sommets dans $V_d$, vérifie si elle est dominante, et la conserve si c'est le cas. Une fois que l'on a la liste de tous les ensembles dominants, on retourne l'ensemble ayant la plus petite taille. L'avantage est qu'on aura la meilleure solution possible.
 
-\paragraph{Complexité} La complexité de cet algorithme est en $\mathcal{O}(2^{|V_d|})$\footnote{On code chaque sommet des défenseurs par 0 s'il ne fait pas parti de l'ensemble dominant et 1 sinon. Tester ensuite toutes les combinaisons donne cette complexité exponentielle.}.
+\paragraph{Complexité} La complexité de cet algorithme est en $\mathcal{O}(\prod_{i = 1}^{8}|V_p|-i)$ où $V_p$ est l'ensemble des positions interceptant les tirs. En effet, lors du premier appel, on a $k=8$ et on sélectionne aléatoirement un sommet parmis $V_p$ qu'on retire du graphe. Ensuite, on regarde si l'ensemble $V_t$ est dominé. Si oui, on a trouvé un ensemble dominant qu'on peut faire remonter dans les appels. Sinon, on appelle récursivement l'algorithme sur le nouveau graphe avec $k - 1$. Si on arrive à $k = 0$, l'ensemble $V_t$ n'est pas dominé et dans l'appel précédent, on séléctionne un autre sommet aléatoirement différent du précédent.
 
-Le désavantage de cet algorithme est le coût en temps qui, si le nombre de sommets de positions des défenseurs est grand, peut être problématique pour obtenir une solution rapidement. L'algorithme évoqué dans la section suivante permettra de réduire les temps de  calcul.
+Le désavantage de cet algorithme est le coût en temps qui, si le nombre de sommets de positions des défenseurs est grand, peut être problématique pour obtenir une solution rapidement.
 
-\subsection{Utilisation d'un algorithme Branch and Reduce}
+\subsection{Utilisation d'un algorithme glouton}
 
-Une piste de résolution possible est l'utilisation de l'algorithme Branch and Reduce, présenté dans l'article \og{} A Branch-and-Reduce Algorithm for Finding a Minimum Independent Dominating Set in Graphs \fg{}\footnote{\url{https://www.univ-orleans.fr/lifo/Members/Mathieu.Liedloff/publications/GL06.pdf}} par Serge \bsc{Gaspers} et Mathieu \bsc{Liedloff}.
-
-Dans cet article, l'algorithme travaille sur des graphes marqués, i.e. des graphes définis par le triplet : $G = (M, F, E)$ ou $M$ est un ensemble de sommets marqués (les tirs), $F$ un ensemble de sommets libres (les positions des défenseurs) et $E$ l'ensemble des arêtes. L'algorithme calcule le sous-ensemble minimal (s'il existe) de $F$ qui domine le graphe $G' = (M \cup F, E)$.
-
-\paragraph{Complexité} La complexité de cet algorithme est égàle à $\mathcal{O}(1.3575^{|V_d|})$ ce qui est nettement mieux que la complexité de l'algorithme exhaustif.
-
-%L'idée serait de modéliser un graphe de défenseurs et d'attaquant en partant de la modélisation du problème.
-
-%Pour cela, il faut commencer par la collecte de les tirs possibles (cadrés) provenant des adversaires. Sachant, que les adversaires et le goal sont des noeuds.
-%Ensuite, il faudra placer des défenseurs (noeuds) sur l'ensemble de la grille puis testé afin de retirer ceux qui n'interceptent aucun tir cadré.
-
-%Enfin, les directions de ces tirs, correspondront aux arêtes reliant les adversaires et les défenseurs ou les adversaires et le goal.
-
-
-
-\section{Compatibilité de la modélisation choisie avec les extensions}
+\section{Extensions : fonctionnalités développées et envisagées}
 
 Cette section présente les avantages et inconvénients de notre modélisation par rapport aux extensions à déveloper.
 
 \paragraph{Plusieurs buts}
-S'il y a plusieurs buts, le nombre de trajectoires ne fera que s'accroître. Si $V_{ti}$ correspond aux tirs cadrés dans le goal $i$ et qu'il y a $n$ buts, alors $V_t = V_{t1} \cap \cdots \cap V_{tn}$.
+On a réussi à implémenter cette fonctionnalité dans l'algorithme brutforce. S'il y a plusieurs buts, le nombre de trajectoires ne fera que s'accroître. Si $V_{ti}$ correspond aux tirs cadrés dans le goal $i$ et qu'il y a $n$ buts, alors $V_t = V_{t1} \cap \cdots \cap V_{tn}$.
 
 
 \paragraph{Position initiale des joueurs}
@@ -283,25 +268,36 @@ Dans le cas ou la position initiale des défenseurs est connue, on peut introdui
 \end{itemize}
 
 \paragraph{Distance minimale entre les robots}
-%Cette extension ne va pas changer grand sur la résolution du problème, car on va considérer par exemple que cette distance minimale correspond au diamètre du robot.
 Dans le cas ou les robots nécessitent de respecter une distance minimale, nous pouvons introduire un paramètre $D$ modélisant la distance minimale de deux robots.
 
 Pour prendre en compte cette contrainte, il faut légèrement changer notre modélisation. À partir du sous-graphe $G'$ comportant les sommets $V_d$, on place une arête entre deux sommets si les positions des défenseurs sont à une distance inférieure à $D$. La solution de positionnement des défenseurs doit être un stable de $G'$.
 
 
-
 \paragraph{Gardien}
+On a réussi à implémenter cette fonctionnalité dans l'algorithme brutforce.
+
 Pour pouvoir prendre en compte cette extension dans notre modèle, il faut prendre en compte les modifications suivantes :
 \begin{itemize}
-  \item L'ensemble des sommets de position des défenseurs situés dans le goal est égal à $V_g$. L'ensemble des sommets $V$ du graphe est alors égal à $V_t \cup V_g \cup V_d$.
-  \item On place des arêtes entre des sommets de $V_t$ et $V_d$ et entre des sommets de $V_t$ et $V_g$ s'il y a des interceptions de tir.
+  \item L'ensemble des sommets de position des défenseurs situés dans le goal est égal à $V_g$. L'ensemble des sommets $V$ du graphe est alors égal à $V_t \cup V_g \cup V_p$.
+  \item On place des arêtes entre des sommets de $V_t$ et $V_p$ et entre des sommets de $V_t$ et $V_g$ s'il y a des interceptions de tir.
 \end{itemize}
 
 La solution de positionnement des défenseurs ne doit autoriser le placement que d'un unique défenseur dans le goal (un seul sommet dans $V_g$).
+Lors de l'énumération des configurations, on a booléen qui indique si un sommet de $V_g$ a déjà été utilisé dans l'ensemble que l'on regarde. Si oui, alors on choisit aléatoirement un sommet parmis les sommets de $V_p$ sinon, on choisit aléatoirement un sommet parmis les sommets de $V_p \cup V_g$.
+
+Par ailleurs, cette méthode peut aussi produire des solutions ou il y a 0 défenseur dans le terrain du goal.
 
 \paragraph{Trajectoires courbées}
-Pour pouvoir gérer des trajectoires courbées, il faut introduire un nouveau paramètre $alpha$ qui est la courbure maximale de la courbe. Lors du calcul des trajectoires des tirs cadrés, il ne faudra pas seulement prendre en compte les tirs rectilignes mais aussi les tirs courbées (discrétisés par $thetastep$).
-Cette extension ne nécessite pas vraiment de changements dans notre modélisation à part à la définition des tirs. Un tir est maintenant modélisé par un point, un angle et une courbure $((x,y), \theta, \alpha)$. Cela aura tendance à augmenter le nombre de sommets modélisant des tirs seulement, mais la résolution de l'algorithme reste similaire.
+Cette extension n'est pas encore prise en compte par nos algorithmes mais peut être envisagée.
+
+Pour pouvoir gérer des trajectoires courbées, on peut maintenant dire que les tirs sont modélisés par des polynômes et non des droites. L'équation de la trajectoire devient alors $y = ax^2 bx + c$ contrairement à $y = bx+c$. Par ailleurs, désactiver cette extension revient à fixer $a$ à 0. Le paramètre $a$ sera ajusté en fonction de l'importance de la courbure des tirs. Par exemple, pour des tirs avec une faible courbure on prendra $a$ petit et pour des tirs avec une courbure importante on prendra $a$ grand.
+
+Lors du calcul des trajectoires des tirs cadrés, il ne faudra pas seulement prendre en compte les tirs rectilignes mais aussi les tirs courbées.
+
+Cette extension ne nécessite pas vraiment de changements dans notre modélisation à part à lors des calculs d'interception de tirs. Cela aura tendance à augmenter le nombre de sommets modélisant des tirs, mais la résolution de l'algorithme reste similaire.
+
+\section{Critique des performances}
+
 
 
 \end{document}

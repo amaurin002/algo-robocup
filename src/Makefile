@@ -2,7 +2,7 @@ TESTS = basic_problem_1 \
 				basic_problem_2 \
 				goal_keeper_problem_1 \
 				initial_defenders_problem \
-				min_dist_problem \
+				min_dist_problem_1 \
 				multigoal_problem
 
 DEPOT = ../ssl_defender_viewer
@@ -19,6 +19,9 @@ goal_keeper_problem_1:
 	python3 brut_force.py $(CONFIGS)/$@.json $(BUILD)/$@
 multigoal_problem_1:
 	python3 brut_force.py	$(CONFIGS)/$@.json $(BUILD)/$@
+min_dist_problem_1:
+	python3 brut_force.py	$(CONFIGS)/$@.json $(BUILD)/$@
+
 
 basic_problem_1_check: basic_problem_1
 	python3 $(DEPOT)/main.py $(CONFIGS)/$<.json $(BUILD)/$<.json
@@ -27,6 +30,8 @@ basic_problem_2_check: basic_problem_2
 goal_keeper_problem_1_check: goal_keeper_problem_1
 	python3 $(DEPOT)/main.py $(CONFIGS)/$<.json $(BUILD)/$<.json
 multigoal_problem_1_check: multigoal_problem_1
+	python3 $(DEPOT)/main.py $(CONFIGS)/$<.json $(BUILD)/$<.json
+min_dist_problem_1_check: min_dist_problem_1
 	python3 $(DEPOT)/main.py $(CONFIGS)/$<.json $(BUILD)/$<.json
 
 
