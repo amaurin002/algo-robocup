@@ -263,10 +263,6 @@ class BrutForce:
         self.G.add_nodes_from(range(len(self.Bc), len(self.nodes)), weight = 1)
         self.G.add_edges_from(self.edges)
         subG = [self.G.subgraph(c).copy() for c in nx.connected_components(self.G)]
-        print(len(self.T))
-        print(len(self.B))
-        print(len(self.Bc))
-        print(len(self.nodes[len(self.Bc):]))
         #for (x, y) in self.nodes[len(self.Bc):]:
         #    plt.scatter(x, y)
         #plt.gca().set_xlim(-4.5, 4.5)
@@ -274,20 +270,23 @@ class BrutForce:
         #plt.show()
         self.dominatingSet = []
         for i in subG:
-            ret = None
-            k = 0
+            ret = []
+            k = 1
             Bc = []
+            area = (self.goalkeeper_area != None)
             for j in i.nodes:
                 if (j < len(self.Bc)):
                     Bc.append(j)
-            while ((ret == None) and (k <= self.maxPlayers)):
-                # If the goal area needs to be empty
-                #ret = self.brutForce(i, list(range(len(self.Bc))), k, False)
-                ret = self.brutForce(i, Bc, k, True)
-                if (ret == None):
-                    print("No solution for", k, "defendors")
+            if (len(Bc) == 0):
+                continue
+            else:
+                print("No solution for 0 defendors.")
+            while ((ret == []) and (k <= self.maxPlayers)):
+                ret = self.brutForce(i, k, Bc, [], area)
+                if (ret == []):
+                    print("No solution for", k, "defendors.")
                 k = k + 1
-            if (ret == None):
+            if (ret == []):
                 raise Exception("This configuration can't be defended.")
             self.dominatingSet += ret
             if (len(self.dominatingSet) > self.maxPlayers):
@@ -318,53 +317,31 @@ class BrutForce:
                       separators = (',', ': '))
 
 
-    def brutForce(self, G, Bc, k, area):
-        if (k <= 0):
-            return None
-        configs = []
+    def brutForce(self, G, k, Bc, D, area):
+        if (k == 0):
+            if (self.isDominated(G, Bc, D)):
+                return D
+            return []
         nodes = list(G.nodes)
-        for i in range(len(nodes)):
-            if ((not area) and (nodes[i] >= self.nbT)):
+        for i in nodes:
+            if ((not area) and (i >= self.nbT)):
                 continue
-            Bcc = Bc.copy()
-            if (nodes[i] < len(self.Bc)):
+            if (i in D or i < len(self.Bc)):
                 continue
-            #print("t", i, k)
-            #H = G.copy()
-            #neighbors = list(H.neighbors(i))
-            #for j in neighbors:
-            #    H.remove_node(j)
-            #H.remove_node(i)
-            neighbors = list(G.neighbors(nodes[i]))
-            sub_neighbors = []
-            for j in neighbors:
-                sub_neighbors.append(list(G.edges(j)))
-                G.remove_node(j)
-                if (j < len(self.Bc)):
-                    Bcc.remove(j)
-            G.remove_node(nodes[i])
-            if (Bcc == []):
-                G.add_node(nodes[i])
-                G.add_nodes_from(neighbors)
-                for j in range(len(neighbors)):
-                    G.add_edges_from(sub_neighbors[j])
-                return [nodes[i]]
-            if (nodes[i] >= self.nbT):
-                node = self.brutForce(G, Bcc, k - 1, False)
-            else:
-                node = self.brutForce(G, Bcc, k - 1, area)
-            G.add_node(i)
-            G.add_nodes_from(neighbors)
-            for j in range(len(neighbors)):
-                G.add_edges_from(sub_neighbors[j])
-            if (node != None):
-                return node + [nodes[i]]
+            E = self.brutForce(G, k-1, Bc, D.copy() + [i],
+                               i >= self.nbT)
+            if (E != []):
+                return E
+        return []
 
-        return None
-        #if (configs == []):
-        #    return None
-        #index = configs.index(min(configs, key = len))
-        #return configs[index]
+
+    def isDominated(self, G, Bc, D):
+        X = set()
+        for i in D:
+            N = list(G.neighbors(i))
+            for j in N:
+                X.add(j)
+        return (len(Bc) == len(X))
 
 
 if __name__ == "__main__":
