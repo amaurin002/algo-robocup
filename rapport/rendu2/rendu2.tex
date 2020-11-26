@@ -256,7 +256,7 @@ On commence par énumérer les configurations avec $k=1$ défenseur. Si on trouv
     \SetKw{Continue}{continue}
     \SetKw{Function}{Function}
     \SetKwBlock{Deb}{begin}{end}
-    \Function{BrutForce(G, k, D = $\emptyset$)}
+    \Function{exhaustif(G, k, D = $\emptyset$)}
     \BlankLine
     \KwResult{D un ensemble dominant}
     \Deb{
@@ -271,7 +271,7 @@ On commence par énumérer les configurations avec $k=1$ défenseur. Si on trouv
       \If{i in D}{
         \Continue \;
       } {
-        E = brutForce(G, k - 1, D $\cup$ i) \;
+        E = exhaustif(G, k - 1, D $\cup$ i) \;
         \If{E != $\emptyset$} {
           \Return E \;
         }
@@ -279,7 +279,7 @@ On commence par énumérer les configurations avec $k=1$ défenseur. Si on trouv
     }
     \Return $\emptyset$ \;}
   \end{algorithm}
-  \caption{Implémentation de notree algorithme brutForce.}
+  \caption{Implémentation de notree algorithme exhaustif.}
 \end{figure}
 
 \paragraph{Complexité} Vérifier si le sous-ensemble $D$ est un ensemble dominant peut se faire en temps $\mathcal{O}(n+m) = \mathcal{O}(n^2)$\footnote{En réalité, on ne regardera seulement les sommets de $V_t$ et les arêtes entre notre solution $D$ et $V_t$. Cette borne est assez large et il est possible de l'affiner.}, avec $n = |V(G)|$ et $m = |E(G)|$. Pour savoir si un ensemble $D$ de taille $k$ domine les tirs, il faut un temps de :
@@ -294,12 +294,46 @@ Le désavantage de cet algorithme est le coût en temps qui, si le nombre minima
 
 \subsection{Utilisation d'un algorithme glouton}
 
+\paragraph{Fonctionnement général} Pour résoudre le problème d'ensemble dominant dans notre graphe, on utilise ensuite l'algorithme glouton. On cherche un ensemble de sommets de taille $k$ qui domine l'ensemble des tirs. On va choisir pour cela un sommet dominant le plus de sommets de tir non dominés. On continue jusqu'à ce qu'on ait trouvé un ensemble dominant ou atteint la taille maximum de l'ensemble.
+
+Avec cet algorithme, il est possible que la solution qu'on obtienne ne soit pas optimale.
+
+
+\paragraph{Notre algorithme}
+
+\begin{figure}[h!]
+  \begin{algorithm}[H]
+    \SetKw{Continue}{continue}
+    \SetKw{Function}{Function}
+    \SetKwBlock{Deb}{begin}{end}
+    \Function{glouton(G, k, D = $\emptyset$)}
+    \BlankLine
+    \KwResult{D un ensemble dominant}
+    \Deb{
+    \If{isDominated(Vt(G), D)}{
+      \Return D \;
+    }
+    \If{k = 0}{
+        \Return $\emptyset$ \;
+      }
+    i = mostDominatePos(G, D) \;
+    E = glouton(G, k - 1, D $\cup$ i) \;
+    \Return E \;
+    }
+  \end{algorithm}
+  \caption{Implémentation de notre algorithme glouton.}
+\end{figure}
+
+La fonction \texttt{mostDominateSet} renvoie le sommet qui domine le plus de sommets de tirs non dominés par des sommets de l'ensemble $D$. La complexité de cette fonction est en
+
+\paragraph{Complexité} Pour chaque sommet de position, on va compter son degré en soustrayant les sommets déjà dominés. La complexité est en $\mathcal{O}(|V_t||D|)$ puisque pour chaque élément de $D$, on vérifie quels sont les sommets de tirs qu'il domine. On en arrive à une complexité de $\mathcal{O}(|V_t||D||V_d|)$. On fait cet appel de fonction au plus $|D|$ fois. On obtient une complexité de $\mathcal{O}(|V_t||D|^2|V_d|)$. Le cas terminal comme pour l'algorithme exhaustif se fait en $\mathcal{O}(n+m)$. Comme la taille de $D$ est au plus de 8, et $V_t$ et $V_d$ sont majorés par le nombre de sommets total $n$, on obtient une complexité en $\mathcal{O}(n^2)$.
+
 \section{Extensions : fonctionnalités développées et envisagées}
 
 Cette section présente les avantages et inconvénients de notre modélisation par rapport aux extensions à déveloper.
 
 \paragraph{Plusieurs buts}
-On a réussi à implémenter cette fonctionnalité dans l'algorithme brutforce. S'il y a plusieurs buts, le nombre de trajectoires ne fera que s'accroître. Si $V_{ti}$ correspond aux tirs cadrés dans le goal $i$ et qu'il y a $n$ buts, alors $V_t = V_{t1} \cap \cdots \cap V_{tn}$.
+On a réussi à implémenter cette fonctionnalité dans l'algorithme exhaustif. S'il y a plusieurs buts, le nombre de trajectoires ne fera que s'accroître. Si $V_{ti}$ correspond aux tirs cadrés dans le goal $i$ et qu'il y a $n$ buts, alors $V_t = V_{t1} \cap \cdots \cap V_{tn}$.
 
 
 \paragraph{Position initiale des joueurs} Nous n'avons pas encore implémenté cette fonctionnalité, mais nous donnons des informations pour la résolution d'un tel problème dans la suite.
@@ -348,24 +382,30 @@ Cette extension ne nécessite pas vraiment de changements dans notre modélisati
 Nous avons effectué les mesures suivantes sur une machine possédant les caractéristiques suivantes :
 
 \begin{itemize}
-  \item %TODO
+  \item Processeur : Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz
+  \item Ram : 16 GB
+  \item OS : Linux machine virtuelle
 \end{itemize}
 
 En utilisant la commande \texttt{time} du terminal, nous avons retenu le temps système. Ce temps comprends notamment la lecture des données d'entrée (fichier JSon) ainsi que la construction d'une structure de graphe.
 
-\begin{tabular}{|l|c|c|}
-  \hline
-  & Algorithme exhaustif & Algorithme glouton \\
-  \hline
-  Problème de base 1 & 0.165 & \\
-  \hline
-  Problème de base 2 & 0.126 & \\
-  \hline
-  Extension multigoal & 0.207 & \\
-  \hline
-  Extension gardien & 0.126 & \\
-  \hline
-\end{tabular}
+\begin{center}
+  \begin{tabular}{|l|c|c|}
+    \hline
+    & Algorithme exhaustif & Algorithme glouton \\
+    \hline
+    Problème de base 1 & 0.165 & \\
+    \hline
+    Problème de base 2 & 0.126 & \\
+    \hline
+    Extension multigoal & 0.207 & \\
+    \hline
+    Extension gardien & 0.126 & \\
+    \hline
+  \end{tabular}
+\end{center}
+
+On obtient des résultats de l'ordre du dixième de seconde pour l'algorithme exhaustif. Ces résultats semblent réalistes au sens où durant la partie, pouvoir récupérer les informations des robots (position, cages, etc.) et organiser la défense doit prendre peu de temps par rapport à la vitesse du ballon.
 
 \section{Proposition de modification de la formalisation du problème}
 
