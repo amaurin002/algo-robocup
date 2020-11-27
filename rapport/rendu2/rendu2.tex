@@ -104,7 +104,7 @@ La fonction $collision$ peut être exprimée de la manière suivante :
 \end{equation*}
 
 \paragraph{Les tirs cadrés}
-Pour qu'un tir soit cadré, il faut que le tir d'un attaquant traverse le segment du goal dans le bon sens (le produit scalaire entre le vecteur du goal et celui de la droite de tir est strictement négatif). Cette représentation montre les tirs qui atteignent le but sans prendre en compte les défenseurs. L'ensemble $B_c$ des tirs cadré est exprimé ainsi :
+Pour qu'un tir soit cadré, il faut que le tir d'un attaquant traverse le segment du goal dans le bon sens (le produit scalaire entre le vecteur du goal et celui de la droite de tir est strictement négatif). Cette représentation montre les tirs qui atteignent le but sans prendre en compte les défenseurs. L'ensemble $B_c$ des tirs cadrés est exprimé ainsi :
 
 \begin{equation*}
     B_c = \{ b \in B \ | \ , b \cap G \ne \emptyset \wedge (b|g) < 0  \}
@@ -135,7 +135,7 @@ On va modéliser le problème que l'on vient de définir de manière formelle co
 \subsection{Construction du graphe}
 
 \paragraph{Les n\oe uds représentant les tirs}
-Un tir est est une combinaison entre la position d'un attaquant et un angle $(p_0, \theta)$. On ne considère que les tirs cadré. Pour chaque tir cadré, on lui associe un n\oe ud sur notre graphe. On note l'ensemble de ces sommets $V_t$.
+Un tir est est une combinaison entre la position d'un attaquant et un angle $(p_0, \theta)$. On ne considère que les tirs cadrés. Pour chaque tir cadré, on lui associe un n\oe ud sur notre graphe. On note l'ensemble de ces sommets $V_t$.
 
 \paragraph{Les n\oe uds représentant les position des défenseurs}
 La position d'un défenseur est modélisée par un point du terrain. On ne considère que les positions disponibles, i.e. l'ensemble des points de $G$ qui ne sont pas en collision avec au moins un élément de $A$. Pour chaque position de défenseur, on lui associe un n\oe ud sur notre graphe. On note l'ensemble de ces sommets $V_d$.
@@ -201,7 +201,7 @@ La figure \ref{tikz:example} montre un exemple de la modélisation du problème.
 \end{figure}
 
 \subsection{Interception de tir}
-Un tir étant défini à l'aide d'un angle $\theta$ et d'un point $(x_0, y_0)$. Pour déterminer si ce dernier est intercepté par un point, on peut dans un premier retrouver l'équation de la droite :
+Un tir étant défini à l'aide d'un angle $\theta$ et d'un point $(x_0, y_0)$. Pour déterminer si ce dernier est intercepté par un point, on peut dans un premier retrouver l'équation de la demi-droite :
 
 \begin{align*}
 y & =  y_0 + (x - x_0)\tan \theta & \text{ et $x \geqslant x_0$ si } \theta \in ]-\frac{\pi}{2}; \frac{\pi}{2} [ \\
@@ -210,7 +210,7 @@ x & = x_0  & \text{ et $y \geqslant 0$ si } \theta = \frac{\pi}{2} \\
 x & = x_0  & \text{ et $y \leqslant 0$ si } \theta = -\frac{\pi}{2} \\
 \end{align*}
 
-Une fois qu'on a l'équation de la demi-droite modélisant le tir, pour vérifier s'il y a une interception d'un tir à une position d'un défenseur on calcule la distance minimale entre la demi-droite de tir et le point position du défenseur. Cette distance est calculée à partir de la formule suivante :
+Une fois que l'on a l'équation de la demi-droite modélisant le tir, pour vérifier s'il y a une interception d'un tir à une position d'un défenseur on calcule la distance minimale entre la demi-droite de tir et le point position du défenseur. Cette distance est calculée à partir de la formule suivante :
 
 \begin{equation*}
   d = \frac{|Ax_0 + By_0 + C|}{\sqrt{A^2+B^2}}
@@ -222,7 +222,7 @@ avec $Ax+By+C = 0$ l'équation de la droite et $(x_0, y_0)$ la position du défe
 
 \subsection{Récupération des positions}
 
-Les figures \ref{figure:terrain_placements} et \ref{figure:terrain_tirs} permettent de voir les positions du terrain qui sont utilisées dans notre grpahe par rapport aux tirs des attaquants. Dans cette exemple, l'algorithme a compté 75 tirs cadrés parmis les 300 tirs possibles. Ensuite, l'algorithme a gardé dans le graphe 726 positions qui interceptaient des tirs parmis les 5 400 positions disponibles.
+Les figures \ref{figure:terrain_placements} et \ref{figure:terrain_tirs} permettent de voir les positions du terrain qui sont utilisées dans notre graphe par rapport aux tirs des attaquants. Dans cet exemple, l'algorithme a compté 75 tirs cadrés parmis les 300 tirs possibles. Ensuite, l'algorithme a gardé dans le graphe 726 positions qui interceptaient des tirs parmis les 5 400 positions disponibles.
 
 \begin{figure}[h!]
   \centering
@@ -238,18 +238,20 @@ Les figures \ref{figure:terrain_placements} et \ref{figure:terrain_tirs} permett
   \label{figure:terrain_tirs}
 \end{figure}
 
+\newpage
+
 \section{Pistes de résolution du problème}
 
-Cette section présente la méthode de calcul pour savoir si une arête se situe entre deux sommets du graphe ainsi que différents algorithmes de résolution à notre problème.
+Cette section présente différents algorithmes de résolution à notre problème ; l'algorithme exhaustif et l'algorithme glouton.
 
 
 \subsection{Utilisation d'un algorithme exhaustif}
 
 \paragraph{Fonctionnement général}
-Pour résoudre le problème d'ensemble dominant dans notre graphe, on peut dans un premier temps utiliser un algorithme exhaustif, qui, pour toute configuration d'ensemble de sommets dans $V_d$, vérifie si elle est dominante, et la conserve si c'est le cas. Une fois que l'on a la liste de tous les ensembles dominants, on retourne l'ensemble ayant la plus petite taille. L'avantage est qu'on aura la meilleure solution possible.
+Pour résoudre le problème d'ensemble dominant dans notre graphe, on peut dans un premier temps utiliser un algorithme exhaustif, qui, pour toute configuration d'ensemble de sommets dans $V_d$, vérifie si elle est dominante ou non. L'avantage est qu'on aura la meilleure solution possible.
 
 \paragraph{Notre algorithme}
-On commence par énumérer les configurations avec $k=1$ défenseur. Si on trouve une configuration qui résout notre problème, on retourne l'ensemble dominant les tirs. Sinon, on énumère  les configurations avec $k=2$ défenseurs.On continue jusqu'à atteindre $k=8$. Si on ne trouve pas de solutions pour $k = 8$, la configuration ne peut pas être défendue.
+On commence par énumérer les configurations avec $k=1$ défenseur. Si on trouve une configuration qui résout notre problème, on retourne l'ensemble dominant les tirs. Sinon, on énumère  les configurations avec $k=2$ défenseurs. On continue jusqu'à atteindre $k=8$. Si on ne trouve pas de solution pour $k = 8$, la configuration ne peut pas être défendue.
 
 \begin{figure}[h!]
   \begin{algorithm}[H]
@@ -282,13 +284,15 @@ On commence par énumérer les configurations avec $k=1$ défenseur. Si on trouv
   \caption{Implémentation de notree algorithme exhaustif.}
 \end{figure}
 
+\newpage
+
 \paragraph{Complexité} Vérifier si le sous-ensemble $D$ est un ensemble dominant peut se faire en temps $\mathcal{O}(n+m) = \mathcal{O}(n^2)$\footnote{En réalité, on ne regardera seulement les sommets de $V_t$ et les arêtes entre notre solution $D$ et $V_t$. Cette borne est assez large et il est possible de l'affiner.}, avec $n = |V(G)|$ et $m = |E(G)|$. Pour savoir si un ensemble $D$ de taille $k$ domine les tirs, il faut un temps de :
 
 \begin{equation*}
   \binom{n}{k} \dot\  \mathcal{O}(n^{2}) = \mathcal{O}(n^{k+2})
 \end{equation*}
 
-Comme $k$ peut aller jusqu'à 8, on a une complexité en $\mathcal{O}(n^{10})$.
+Comme $k$ peut aller jusqu'à 8, on a une complexité en $\mathcal{O}(n^{10})$. Cependant, la complexité de cet algorithme dépend beaucoup de l'ensemble dominant que l'on trouve ($\mathcal{O}(n^{2+|D|})$). Il peut ainsi être intéressant de tester des configurations avec beaucoup de défenseurs pour défendre.
 
 Le désavantage de cet algorithme est le coût en temps qui, si le nombre minimal de défenseur nécessaire est grand ($k \geqslant 4$), peut être problématique pour obtenir une solution rapidement. Par ailleurs, un trop grand nombre de sommets modélisant des tirs ou des positions d'interception peuvent aussi rendre plus difficile la résolution du problème.
 
@@ -324,13 +328,13 @@ Avec cet algorithme, il est possible que la solution qu'on obtienne ne soit pas 
   \caption{Implémentation de notre algorithme glouton.}
 \end{figure}
 
-La fonction \texttt{mostDominateSet} renvoie le sommet qui domine le plus de sommets de tirs non dominés par des sommets de l'ensemble $D$. La complexité de cette fonction est en
+La fonction \texttt{mostDominatePos} renvoie le sommet qui domine le plus de sommets de tirs non dominés par des sommets de l'ensemble $D$.
 
 \paragraph{Complexité} Pour chaque sommet de position, on va compter son degré en soustrayant les sommets déjà dominés. La complexité est en $\mathcal{O}(|V_t||D|)$ puisque pour chaque élément de $D$, on vérifie quels sont les sommets de tirs qu'il domine. On en arrive à une complexité de $\mathcal{O}(|V_t||D||V_d|)$. On fait cet appel de fonction au plus $|D|$ fois. On obtient une complexité de $\mathcal{O}(|V_t||D|^2|V_d|)$. Le cas terminal comme pour l'algorithme exhaustif se fait en $\mathcal{O}(n+m)$. Comme la taille de $D$ est au plus de 8, et $V_t$ et $V_d$ sont majorés par le nombre de sommets total $n$, on obtient une complexité en $\mathcal{O}(n^2)$.
 
 \section{Extensions : fonctionnalités développées et envisagées}
 
-Cette section présente les avantages et inconvénients de notre modélisation par rapport aux extensions à déveloper.
+Cette section présente les avantages et inconvénients de notre modélisation par rapport aux extensions à développer.
 
 \paragraph{Plusieurs buts}
 On a réussi à implémenter cette fonctionnalité dans l'algorithme exhaustif. S'il y a plusieurs buts, le nombre de trajectoires ne fera que s'accroître. Si $V_{ti}$ correspond aux tirs cadrés dans le goal $i$ et qu'il y a $n$ buts, alors $V_t = V_{t1} \cap \cdots \cap V_{tn}$.
@@ -364,7 +368,7 @@ Pour pouvoir prendre en compte cette extension dans notre modèle, il faut prend
 \end{itemize}
 
 La solution de positionnement des défenseurs ne doit autoriser le placement que d'un unique défenseur dans le goal (un seul sommet dans $V_g$).
-Lors de l'énumération des configurations, on a booléen qui indique si un sommet de $V_g$ a déjà été utilisé dans l'ensemble que l'on regarde. Si oui, alors on choisit aléatoirement un sommet parmis les sommets de $V_d$ sinon, on choisit aléatoirement un sommet parmis les sommets de $V_d \cup V_g$.
+Lors de l'énumération des configurations, on a un booléen qui indique si un sommet de $V_g$ a déjà été utilisé dans l'ensemble que l'on regarde. Si oui, alors on choisit aléatoirement un sommet parmis les sommets de $V_d$ sinon, on choisit aléatoirement un sommet parmis les sommets de $V_d \cup V_g$.
 
 Par ailleurs, cette méthode peut aussi produire des solutions ou il y a 0 défenseur dans le terrain du goal.
 
@@ -387,27 +391,29 @@ Nous avons effectué les mesures suivantes sur une machine possédant les caract
   \item OS : Linux machine virtuelle
 \end{itemize}
 
-En utilisant la commande \texttt{time} du terminal, nous avons retenu le temps système. Ce temps comprends notamment la lecture des données d'entrée (fichier JSon) ainsi que la construction d'une structure de graphe.
+En utilisant la commande \texttt{time} du terminal, nous avons récupéré le temps de l'exécution de l'algorithme. Ce temps comprends notamment la lecture des données d'entrée (fichier JSon) ainsi que la construction d'une structure de graphe et la résolution du problème.
+
+Par soucis d'implémentation, nous n'avons pas encore pu réaliser les mesures de temps de l'algorithme glouton.
 
 \begin{center}
   \begin{tabular}{|l|c|c|}
     \hline
     & Algorithme exhaustif & Algorithme glouton \\
     \hline
-    Problème de base 1 & 0.165 & \\
+    Problème de base 1 & 0.165 & / \\
     \hline
-    Problème de base 2 & 0.126 & \\
+    Problème de base 2 & 0.126 & / \\
     \hline
-    Extension multigoal & 0.207 & \\
+    Extension multigoal & 0.207 & / \\
     \hline
-    Extension gardien & 0.126 & \\
+    Extension gardien & 0.126 & / \\
     \hline
   \end{tabular}
 \end{center}
 
 On obtient des résultats de l'ordre du dixième de seconde pour l'algorithme exhaustif. Ces résultats semblent réalistes au sens où durant la partie, pouvoir récupérer les informations des robots (position, cages, etc.) et organiser la défense doit prendre peu de temps par rapport à la vitesse du ballon.
 
-\section{Proposition de modification de la formalisation du problème}
+%\section{Proposition de modification de la formalisation du problème}
 
 
 
